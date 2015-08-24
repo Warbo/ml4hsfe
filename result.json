@@ -1,0 +1,177 @@
+[
+  {
+    "ast": "(\"Lam\" ((\"Var\" (\"name\" \"name\"))) (\"Lam\" ((\"Var\" (\"name\" \"ds\"))) (\"Case\" (\"Var\" ((\"Var\" (\"name\" \"ds\")))) ((\"Var\" (\"name\" \"wild\"))) (\"TyConApp\" ((\"TyCon\" ((\"name\" \"StdOption\") (\"mod\" \"System.Console.GetOpt.Utils\") (\"pkg\" \"MissingH\")))) (\"[]\")) (\"(:)\" (\"(,,)\" (\"DataAlt\" ((\"DataCon\" ((\"name\" \"Nothing\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\"))))) (\"[]\") (\"App\" (\"App\" (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"(,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"Char\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"[]\")) (\"[]\"))))) (\"Var\" ((\"Var\" (\"name\" \"name\"))))) (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"Char\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"[]\")))))) (\"(:)\" (\"(,,)\" (\"DataAlt\" ((\"DataCon\" ((\"name\" \"Just\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\"))))) (\"(:)\" ((\"Var\" (\"name\" \"x\"))) (\"[]\")) (\"App\" (\"App\" (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"(,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")))) (\"Var\" ((\"Var\" (\"name\" \"name\"))))) (\"Var\" ((\"Var\" (\"name\" \"x\")))))) (\"[]\"))))))",
+    "name": "stdOptional",
+    "modu": "System.Console.GetOpt.Utils",
+    "package": "MissingH",
+    "dependencies": [
+      {
+        "name": "StdOption",
+        "modu": "System.Console.GetOpt.Utils",
+        "package": "MissingH"
+      },
+      {
+        "name": "Nothing",
+        "modu": "GHC.Base",
+        "package": "base"
+      },
+      {
+        "name": "(,)",
+        "modu": "GHC.Tuple",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "String",
+        "modu": "GHC.Base",
+        "package": "base"
+      },
+      {
+        "name": "[]",
+        "modu": "GHC.Types",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "Char",
+        "modu": "GHC.Types",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "stdRequired",
+        "modu": "System.Console.GetOpt.Utils",
+        "package": "MissingH"
+      },
+      {
+        "name": "Just",
+        "modu": "GHC.Base",
+        "package": "base"
+      }
+    ]
+  },
+  {
+    "ast": "(\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"(,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\"))))",
+    "name": "stdRequired",
+    "modu": "System.Console.GetOpt.Utils",
+    "package": "MissingH",
+    "dependencies": [
+      {
+        "name": "(,)",
+        "modu": "GHC.Tuple",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "parseCmdLine",
+        "modu": "System.Console.GetOpt.Utils",
+        "package": "MissingH"
+      },
+
+      {
+        "name": "String",
+        "modu": "GHC.Base",
+        "package": "base"
+      }
+    ]
+  },
+  {
+    "ast": "(\"Lam\" ((\"Var\" (\"name\" \"a\"))) (\"Lam\" ((\"Var\" (\"name\" \"order\"))) (\"Lam\" ((\"Var\" (\"name\" \"options\"))) (\"Lam\" ((\"Var\" (\"name\" \"header\"))) (\"App\" (\"App\" (\"App\" (\"App\" (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \">>=\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"IO\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"[]\")))) (\"Var\" ((\"Var\" ((\"name\" \"$fMonadIO\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")) (\"[]\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"(,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyVarTy\" ((\"Var\" (\"name\" \"a\")))) (\"[]\"))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")) (\"[]\"))) (\"[]\")))))) (\"Var\" ((\"Var\" ((\"name\" \"getArgs\") (\"mod\" \"System.Environment\") (\"pkg\" \"base\")))))) (\"Lam\" ((\"Var\" (\"name\" \"argv\"))) (\"Case\" (\"App\" (\"App\" (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"getOpt\") (\"mod\" \"System.Console.GetOpt\") (\"pkg\" \"base\"))))) (\"Type\" (\"TyVarTy\" ((\"Var\" (\"name\" \"a\")))))) (\"Var\" ((\"Var\" (\"name\" \"order\"))))) (\"Var\" ((\"Var\" (\"name\" \"options\"))))) (\"Var\" ((\"Var\" (\"name\" \"argv\"))))) ((\"Var\" (\"name\" \"wild\"))) (\"TyConApp\" ((\"TyCon\" ((\"name\" \"IO\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"(,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyVarTy\" ((\"Var\" (\"name\" \"a\")))) (\"[]\"))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")) (\"[]\"))) (\"[]\")))) (\"[]\"))) (\"(:)\" (\"(,,)\" (\"DataAlt\" ((\"DataCon\" ((\"name\" \"(,,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\"))))) (\"(:)\" ((\"Var\" (\"name\" \"o\"))) (\"(:)\" ((\"Var\" (\"name\" \"n\"))) (\"(:)\" ((\"Var\" (\"name\" \"ds\"))) (\"[]\")))) (\"Case\" (\"Var\" ((\"Var\" (\"name\" \"ds\")))) ((\"Var\" (\"name\" \"wild\"))) (\"TyConApp\" ((\"TyCon\" ((\"name\" \"IO\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"(,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyVarTy\" ((\"Var\" (\"name\" \"a\")))) (\"[]\"))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")) (\"[]\"))) (\"[]\")))) (\"[]\"))) (\"(:)\" (\"(,,)\" (\"DEFAULT\") (\"[]\") (\"App\" (\"Lam\" ((\"Var\" (\"name\" \"ds\"))) (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"ioError\") (\"mod\" \"GHC.IO.Exception\") (\"pkg\" \"base\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"(,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyVarTy\" ((\"Var\" (\"name\" \"a\")))) (\"[]\"))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")) (\"[]\"))) (\"[]\")))))) (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"userError\") (\"mod\" \"GHC.IO.Exception\") (\"pkg\" \"base\"))))) (\"App\" (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"++\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"Char\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"[]\")))) (\"App\" (\"App\" (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"concat\") (\"mod\" \"Data.Foldable\") (\"pkg\" \"base\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"[]\")))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"Char\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"[]\")))) (\"Var\" ((\"Var\" ((\"name\" \"$fFoldable[]\") (\"mod\" \"Data.Foldable\") (\"pkg\" \"base\")))))) (\"Var\" ((\"Var\" (\"name\" \"ds\")))))) (\"App\" (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"usageInfo\") (\"mod\" \"System.Console.GetOpt\") (\"pkg\" \"base\"))))) (\"Type\" (\"TyVarTy\" ((\"Var\" (\"name\" \"a\")))))) (\"Var\" ((\"Var\" (\"name\" \"header\"))))) (\"Var\" ((\"Var\" (\"name\" \"options\"))))))))) (\"Var\" ((\"Var\" ((\"name\" \"void#\") (\"mod\" \"GHC.Prim\") (\"pkg\" \"ghc-prim\"))))))) (\"(:)\" (\"(,,)\" (\"DataAlt\" ((\"DataCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\"))))) (\"[]\") (\"App\" (\"App\" (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"return\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"IO\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"[]\")))) (\"Var\" ((\"Var\" ((\"name\" \"$fMonadIO\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"(,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyVarTy\" ((\"Var\" (\"name\" \"a\")))) (\"[]\"))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")) (\"[]\"))) (\"[]\")))))) (\"App\" (\"App\" (\"App\" (\"App\" (\"Var\" ((\"Var\" ((\"name\" \"(,)\") (\"mod\" \"GHC.Tuple\") (\"pkg\" \"ghc-prim\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyVarTy\" ((\"Var\" (\"name\" \"a\")))) (\"[]\"))))) (\"Type\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"[]\") (\"mod\" \"GHC.Types\") (\"pkg\" \"ghc-prim\")))) (\"(:)\" (\"TyConApp\" ((\"TyCon\" ((\"name\" \"String\") (\"mod\" \"GHC.Base\") (\"pkg\" \"base\")))) (\"[]\")) (\"[]\"))))) (\"Var\" ((\"Var\" (\"name\" \"o\"))))) (\"Var\" ((\"Var\" (\"name\" \"n\"))))))) (\"[]\"))))) (\"[]\")))))))))",
+    "name": "parseCmdLine",
+    "modu": "System.Console.GetOpt.Utils",
+    "package": "MissingH",
+    "dependencies": [
+      {
+        "name": ">>=",
+        "modu": "GHC.Base",
+        "package": "base"
+      },
+      {
+        "name": "stdOptional",
+        "modu": "System.Console.GetOpt.Utils",
+        "package": "MissingH"
+      },
+      {
+        "name": "IO",
+        "modu": "GHC.Types",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "$fMonadIO",
+        "modu": "GHC.Base",
+        "package": "base"
+      },
+      {
+        "name": "[]",
+        "modu": "GHC.Types",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "String",
+        "modu": "GHC.Base",
+        "package": "base"
+      },
+      {
+        "name": "(,)",
+        "modu": "GHC.Tuple",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "getArgs",
+        "modu": "System.Environment",
+        "package": "base"
+      },
+      {
+        "name": "getOpt",
+        "modu": "System.Console.GetOpt",
+        "package": "base"
+      },
+      {
+        "name": "(,,)",
+        "modu": "GHC.Tuple",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "ioError",
+        "modu": "GHC.IO.Exception",
+        "package": "base"
+      },
+      {
+        "name": "userError",
+        "modu": "GHC.IO.Exception",
+        "package": "base"
+      },
+      {
+        "name": "++",
+        "modu": "GHC.Base",
+        "package": "base"
+      },
+      {
+        "name": "Char",
+        "modu": "GHC.Types",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "concat",
+        "modu": "Data.Foldable",
+        "package": "base"
+      },
+      {
+        "name": "$fFoldable[]",
+        "modu": "Data.Foldable",
+        "package": "base"
+      },
+      {
+        "name": "usageInfo",
+        "modu": "System.Console.GetOpt",
+        "package": "base"
+      },
+      {
+        "name": "void#",
+        "modu": "GHC.Prim",
+        "package": "ghc-prim"
+      },
+      {
+        "name": "return",
+        "modu": "GHC.Base",
+        "package": "base"
+      }
+    ]
+  }
+]
