@@ -28,11 +28,3 @@ extractGraphable ASTId {
                         package = package,
                         dependencies = dependencies
                         } = ((name,modu,package), (name,modu,package), extractAtoms dependencies)
-
-
--- graphFromEdges :: Ord key => [(Atom, Atom, [Atom])]
---                              -> (Graph, Vertex -> (Atom, Atom, [Atom]), Atom -> Maybe Vertex)
--- dependencySort :: Graphable -> [Atom]
--- dependencySort [] = []
--- dependencySort x = let (g,v,_) = graphFromEdges x
---             in Prelude.map (\x -> let (k,_,_) = v x in k) $ topSort g
