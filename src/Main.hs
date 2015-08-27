@@ -15,5 +15,3 @@ main = do
   Right ps -> print $ stronglyConnComp $ map extractGraphable ps
 
 
-
--- $ stronglyConnComp

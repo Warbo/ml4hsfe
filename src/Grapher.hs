@@ -2,7 +2,7 @@
 module Grapher where
 
 import           Data.Graph
-import           Data.Text
+import           Data.Text  (Text)
 import           Jparse
 
 
@@ -16,15 +16,15 @@ instance Show v => Show (SCC v) where
 
 -- Handles the case of the Json Key being a Maybe [ASTId]
 extractAtoms :: Maybe [ASTId] -> [Atom]
-extractAtoms (Just (x:xs)) = (name x, modu x, package x) : extractAtoms (pure xs)
+extractAtoms (Just a)      = map (\ x -> (name x, modu x, package x)) a
 extractAtoms _             = []
 
 
 -- Turns a Json object into a tuple that's acceptable by graphFromEdges
 extractGraphable :: ASTId -> (Atom , Atom, [Atom])
 extractGraphable ASTId {
-                        name = name,
-                        modu = modu,
-                        package = package,
-                        dependencies = dependencies
-                        } = ((name,modu,package), (name,modu,package), extractAtoms dependencies)
+                        name = n,
+                        modu = m,
+                        package = p,
+                        dependencies = d
+                        } = ((n,m,p), (n,m,p), extractAtoms d)
