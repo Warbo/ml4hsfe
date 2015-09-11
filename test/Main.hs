@@ -10,5 +10,5 @@ main = defaultMain $ testGroup "All tests" [
     testProperty "Can extract IDs from AST" canExtractIds
   ]
 
-canExtractIds ids = forAll (exprWith ids) canExtract
+canExtractIds ids = forAll (sexprWith ids) canExtract
   where canExtract expr = extractIds expr == ids

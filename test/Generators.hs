@@ -1,8 +1,54 @@
 module Generators where
 
+import CoreSyn
+import DataCon
+import FastString
+import HS2AST.Sexpr
 import HS2AST.Types
 import HS2AST.Tests.Generators
+import Module
+import Name
+import OccName
+import Packages
+import SrcLoc
 import Test.QuickCheck
+import Var
 
-exprWith :: [Identifier] -> Gen AST
-exprWith = undefined
+sexprWith is = do x <- exprWith is
+                  return (toSexp dummyDb x)
+
+exprWith :: [Identifier] -> Gen (Expr Var)
+exprWith []     = arbitrary
+exprWith (i:is) = do tail <- exprWith is
+                     sort <- elements ["Var", "DataCon", "TyCon"]
+                     head <- case sort of
+                                  "DataCon" -> do dc <- dataConOf i
+                                                  exprUsingDCs [dc]
+                     return (App head tail)
+
+nameOf :: Identifier -> (String -> OccName) -> Gen Name
+nameOf i mkON = do u <- arbitrary
+                   let m = Module {
+                               modulePackageKey = stringToPackageKey (idPackage i)
+                             , moduleName       = mkModuleName       (idModule  i)
+                             }
+                   return (mkExternalName u m (mkON (idName i)) noSrcSpan)
+
+-- TODO: Move this to HS2AST's Generators.hs (it's copypasta of arbitrary)
+dataConOf i = mkDataCon <$> nameOf i mkDataOcc
+                        <*> arbitrary
+                        <*> expList arbitrary
+                        <*> expList arbitrary
+                        <*> expList arbitrary
+                        <*> expList arbitrary
+                        <*> expList arbitrary
+                        <*> arbitrary
+                        <*> expList arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+
+-- TODO: Merge into HS2AST
+dummyDb = Just . PackageName . mkFastString . packageKeyString
