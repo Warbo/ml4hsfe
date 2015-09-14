@@ -15,11 +15,12 @@ import           Test.Tasty             (defaultMain, testGroup, localOption)
 import           Test.Tasty.QuickCheck
 
 main = defaultMain $ testGroup "All tests" [
-    testProperty "Can extract IDs from AST"      canExtractIds
-  , testProperty "Matrix rows same length"       matricesLineUp
-  , testProperty "Rows merge properly"           rowsMerge
-  , testProperty "Spot IDs when building matrix" matricesHaveIds
-  , testProperty "IDs get substituted"           canSubIds
+    testProperty "Can extract IDs from AST"         canExtractIds
+  , testProperty "Matrix rows same length"          matricesLineUp
+  , testProperty "Rows merge properly"              rowsMerge
+  , testProperty "Spot IDs when building matrix"    matricesHaveIds
+  , testProperty "IDs get substituted"              canSubIds
+  , testProperty "Can turn AST into feature matrix" canGetFeatures
   ]
 
 canExtractIds ids = forAll (sexprWith ids) canExtract
@@ -70,3 +71,10 @@ genMatrixWith ids = fmap astToMatrix ast
 
 genCleanId :: Gen Identifier
 genCleanId = fmap cleanId arbitrary
+
+canGetFeatures :: Property
+canGetFeatures = forAll (listOf genCleanId >>= genMatrixWith) featuresGotten
+  where featuresGotten m = typeCheck (getFeatures f m)
+        f id = length (idName id)
+        typeCheck :: Features -> Bool
+        typeCheck _ = True

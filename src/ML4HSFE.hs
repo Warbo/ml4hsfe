@@ -13,7 +13,7 @@ type PreMatrix = Matrix Identifier String
 
 type Feature = Int
 
-type Features = Matrix Feature Feature
+type Features = [[Maybe Feature]]
 
 extractIds :: AST -> [Identifier]
 extractIds (L.List xs) = case extractId (L.List xs) of
@@ -101,3 +101,12 @@ subStrings rows = map (map switch) rows
 -- TODO
 stringFeature :: String -> Feature
 stringFeature = length
+
+getFeatures :: (Identifier -> Feature) -> PreMatrix -> Features
+getFeatures f m = collapse (subStrings (subIdsWith f m))
+
+collapse :: [[Maybe (Either a a)]] -> [[Maybe a]]
+collapse rows = map (map f) rows
+  where f (Just (Left  x)) = Just x
+        f (Just (Right x)) = Just x
+        f Nothing = Nothing
