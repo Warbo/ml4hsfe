@@ -44,6 +44,7 @@ test-suite test
                      , HS2AST
                      , ghc
                      , containers
+                     , atto-lisp
                      , QuickCheck
                      , quickspec
                      , tasty >= 0.7

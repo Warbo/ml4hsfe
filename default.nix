@@ -10,7 +10,7 @@ mkDerivation {
   libraryHaskellDepends = [ atto-lisp base HS2AST text ];
   executableHaskellDepends = [ base ];
   testHaskellDepends = [
-    base containers ghc HS2AST QuickCheck quickspec tasty
+    atto-lisp base containers ghc HS2AST QuickCheck quickspec tasty
     tasty-quickcheck
   ];
   homepage = "http://chriswarbo.net/git/ml4hsfe";

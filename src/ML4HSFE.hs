@@ -8,13 +8,20 @@ import qualified Data.Text as T
 import HS2AST.Types
 
 extractIds :: AST -> [Identifier]
-extractIds (L.List xs) | have extractPkg xs && have extractName xs && have extractMod xs =
-                         let [p] = mapMaybe extractPkg  xs
-                             [n] = mapMaybe extractName xs
-                             [m] = mapMaybe extractMod  xs
-                         in [ID { idName = n, idPackage = p, idModule = m }]
-extractIds (L.List xs) = concatMap extractIds xs
+extractIds (L.List xs) = case extractId (L.List xs) of
+  Just x  -> x : concatMap extractIds xs
+  Nothing ->     concatMap extractIds xs
 extractIds _ = []
+
+extractId :: AST -> Maybe Identifier
+extractId (L.List xs) | have extractPkg  xs &&
+                        have extractName xs &&
+                        have extractMod  xs =
+  let [p] = mapMaybe extractPkg  xs
+      [n] = mapMaybe extractName xs
+      [m] = mapMaybe extractMod  xs
+   in Just (ID { idName = n, idPackage = p, idModule = m })
+extractId _ = Nothing
 
 have :: (a -> Maybe b) -> [a] -> Bool
 have f [] = False
@@ -48,7 +55,9 @@ longest = longest' 0
 
 astToMatrix' :: AST -> [[Maybe (Either Identifier String)]]
 astToMatrix' (L.String x) = [[Just (Right (T.unpack x))]]
-astToMatrix' (L.List xs)  = [] : mergeRows subtrees
+astToMatrix' (L.List xs)  = case extractId (L.List xs) of
+                                 Just id -> [[Just (Left id)]]
+                                 Nothing -> [] : mergeRows subtrees
   where subtrees = map astToMatrix' xs
 
 mergeRows :: [[[a]]] -> [[a]]
