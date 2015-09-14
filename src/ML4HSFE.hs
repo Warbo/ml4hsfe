@@ -29,3 +29,40 @@ extractName _ = Nothing
 
 extractMod (L.List [L.String "mod", L.String m]) = Just (T.unpack m)
 extractMod _ = Nothing
+
+astToMatrix :: AST -> [[Maybe (Either Identifier String)]]
+astToMatrix = normaliseLengths . astToMatrix'
+
+normaliseLengths :: [[Maybe a]] -> [[Maybe a]]
+normaliseLengths xss = map (padToLen (longest xss)) xss
+
+padToLen len xs = take len (xs ++ replicate len Nothing)
+
+countLeaves (L.String _) = 1
+countLeaves (L.List xs)  = sum (map countLeaves xs)
+
+longest :: [[a]] -> Int
+longest = longest' 0
+  where longest' n []     = n
+        longest' n (x:xs) = longest' (max n (length x)) xs
+
+astToMatrix' :: AST -> [[Maybe (Either Identifier String)]]
+astToMatrix' (L.String x) = [[Just (Right (T.unpack x))]]
+astToMatrix' (L.List xs)  = [] : mergeRows subtrees
+  where subtrees = map astToMatrix' xs
+
+mergeRows :: [[[a]]] -> [[a]]
+mergeRows = trimEmpty . mergeRows'
+
+trimEmpty = reverse . dropWhile null . reverse
+
+mergeRows' [] = []
+mergeRows' xs = mconcat heads : mergeRows' tails
+  where heads = mapMaybe safeHead xs
+        tails = mapMaybe safeTail xs
+
+safeHead (x:xs) = Just x
+safeHead []     = Nothing
+
+safeTail (x:xs) = Just xs
+safeTail []     = Nothing
