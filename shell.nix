@@ -4,8 +4,8 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, base, ghc, HS2AST, QuickCheck, quickspec
-      , stdenv, tasty, tasty-quickcheck
+  f = { mkDerivation, atto-lisp, base, containers, ghc, HS2AST
+      , QuickCheck, quickspec, stdenv, tasty, tasty-quickcheck, text
       }:
       mkDerivation {
         pname = "ML4HSFE";
@@ -13,10 +13,11 @@ let
         src = ./.;
         isLibrary = true;
         isExecutable = true;
-        libraryHaskellDepends = [ base ];
+        libraryHaskellDepends = [ atto-lisp base HS2AST text ];
         executableHaskellDepends = [ base ];
         testHaskellDepends = [
-          base ghc HS2AST QuickCheck quickspec tasty tasty-quickcheck
+          base containers ghc HS2AST QuickCheck quickspec tasty
+          tasty-quickcheck
         ];
         homepage = "http://chriswarbo.net/git/ml4hsfe";
         description = "ML4PG-like feature extraction for Haskell ASTs";

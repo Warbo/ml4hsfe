@@ -20,7 +20,7 @@ sexprWith is = do x <- exprWith is
 exprWith :: [Identifier] -> Gen (Expr Var)
 exprWith []     = arbitrary
 exprWith (i:is) = do tail <- exprWith is
-                     sort <- elements ["Var", "DataCon", "TyCon"]
+                     sort <- elements ["DataCon"] -- ,"Var", "TyCon"]
                      head <- case sort of
                                   "DataCon" -> do dc <- dataConOf i
                                                   exprUsingDCs [dc]
