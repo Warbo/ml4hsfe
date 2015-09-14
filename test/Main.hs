@@ -26,6 +26,7 @@ main = defaultMain $ testGroup "All tests" [
   , testProperty "IDs get substituted"              canSubIds
   , testProperty "Can turn AST into feature matrix" canGetFeatures
   , testProperty "Can lookup JSON clusters"         canLookupClusters
+  , testProperty "Example JSON works"               exampleCluster
   ]
 
 canExtractIds ids = forAll (sexprWith ids) canExtract
@@ -97,3 +98,19 @@ genClusterString = Str.toString . encode . Array . V.fromList . map toObject
         add f (Object o) = Object (HM.insert "cluster" f o)
         num :: Feature -> Value
         num = Number . fromInteger . toInteger
+
+exampleCluster :: Bool
+exampleCluster = readClustered arr i1 == 3 &&
+                 readClustered arr i2 == 7
+  where [o1, o2]   = map mkO [("foo", 3), ("bar", 7)]
+        arr        = concat ["[", o1, ", ", o2, "]"]
+        mkO (x, c) = concat ["{",
+                             "\"package\": \"", x, "Pkg\", ",
+                             "\"name\": \"",    x, "Name\", ",
+                             "\"module\": \"",  x, "Mod\", ",
+                             "\"cluster\": ",   show c,
+                             "}"]
+        [i1, i2] = map (\x -> ID { idName    = x ++ "Name"
+                                 , idModule  = x ++ "Mod"
+                                 , idPackage = x ++ "Pkg" })
+                       ["foo", "bar"]

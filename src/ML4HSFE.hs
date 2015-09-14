@@ -5,7 +5,8 @@ module ML4HSFE where
 import           Data.Aeson                 as Aeson
 import           Data.AttoLisp              as L
 import qualified Data.Attoparsec.ByteString as AB
-import qualified Data.HashMap.Strict as HM
+import qualified Data.HashMap.Strict        as HM
+import qualified Data.List                  as List
 import           Data.Maybe
 import qualified Data.Scientific            as Sci
 import qualified Data.Stringable            as S
@@ -148,3 +149,13 @@ instance FromJSON WithFeature where
     f <- x .: "cluster"
     return (WC { wcId = ID { idPackage = p, idModule = m, idName = n },
                  wcFeature = f })
+
+renderMatrix :: (Show a) => String -> [[Maybe a]] -> String
+renderMatrix def = unlines . map (List.intercalate "," . map f)
+  where f Nothing  = def
+        f (Just x) = show x
+
+process :: String -> String -> String
+process rawAst rawDb = let matrix   = astToMatrix (readAst       rawAst)
+                           features = getFeatures (readClustered rawDb) matrix
+                        in renderMatrix "0" features
