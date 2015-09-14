@@ -37,7 +37,7 @@ executable ML4HSFE
   -- other-extensions:    
   build-depends:       base >=4.8 && <4.9
                      , ML4HSFE
-  hs-source-dirs:      src
+  hs-source-dirs:      ml4hsfe
   default-language:    Haskell2010
 
 test-suite test

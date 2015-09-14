@@ -151,7 +151,10 @@ instance FromJSON WithFeature where
                  wcFeature = f })
 
 renderMatrix :: (Show a) => String -> [[Maybe a]] -> String
-renderMatrix def = unlines . map (List.intercalate "," . map f)
+renderMatrix def = unlines . map (List.intercalate ",") . renderMatrix' def
+
+renderMatrix' :: (Show a) => String -> [[Maybe a]] -> [[String]]
+renderMatrix' def  = map (map f)
   where f Nothing  = def
         f (Just x) = show x
 

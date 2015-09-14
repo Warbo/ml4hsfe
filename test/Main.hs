@@ -27,6 +27,7 @@ main = defaultMain $ testGroup "All tests" [
   , testProperty "Can turn AST into feature matrix" canGetFeatures
   , testProperty "Can lookup JSON clusters"         canLookupClusters
   , testProperty "Example JSON works"               exampleCluster
+  , testProperty "Default feature is used"          defaultFeatureUsed
   ]
 
 canExtractIds ids = forAll (sexprWith ids) canExtract
@@ -114,3 +115,9 @@ exampleCluster = readClustered arr i1 == 3 &&
                                  , idModule  = x ++ "Mod"
                                  , idPackage = x ++ "Pkg" })
                        ["foo", "bar"]
+
+defaultFeatureUsed :: [[Maybe Int]] -> String -> Bool
+defaultFeatureUsed m d = outCount >= inCount
+  where rows     = renderMatrix' d m
+        inCount  = length . filter isNothing . concat $ m
+        outCount = length . filter (== d)    . concat $ rows
