@@ -2,10 +2,14 @@
 
 module Main where
 
-import qualified Data.AttoLisp as L
+import           Data.Aeson
+import qualified Data.AttoLisp       as L
+import qualified Data.HashMap.Strict as HM
 import           Data.List
 import           Data.Maybe
-import qualified Data.Set as S
+import qualified Data.Set            as S
+import qualified Data.Stringable     as Str
+import qualified Data.Vector         as V
 import           Generators
 import           HS2AST.Sexpr
 import           HS2AST.Types
@@ -21,6 +25,7 @@ main = defaultMain $ testGroup "All tests" [
   , testProperty "Spot IDs when building matrix"    matricesHaveIds
   , testProperty "IDs get substituted"              canSubIds
   , testProperty "Can turn AST into feature matrix" canGetFeatures
+  , testProperty "Can lookup JSON clusters"         canLookupClusters
   ]
 
 canExtractIds ids = forAll (sexprWith ids) canExtract
@@ -78,3 +83,17 @@ canGetFeatures = forAll (listOf genCleanId >>= genMatrixWith) featuresGotten
         f id = length (idName id)
         typeCheck :: Features -> Bool
         typeCheck _ = True
+
+canLookupClusters :: [(Identifier, Feature)] -> Bool
+canLookupClusters idFeatures = all found idFeatures
+  where clusterString = genClusterString idFeatures
+        found (id, f) = readClustered clusterString id == f
+
+genClusterString :: [(Identifier, Feature)] -> String
+genClusterString = Str.toString . encode . Array . V.fromList . map toObject
+  where toObject :: (Identifier, Feature) -> Value
+        toObject (id, f) = add (num f) (toJSON id)
+        add :: Value -> Value -> Value
+        add f (Object o) = Object (HM.insert "cluster" f o)
+        num :: Feature -> Value
+        num = Number . fromInteger . toInteger

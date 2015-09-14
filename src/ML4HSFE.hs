@@ -2,10 +2,16 @@
 
 module ML4HSFE where
 
-import Data.AttoLisp as L
-import Data.Maybe
-import qualified Data.Text as T
-import HS2AST.Types
+import           Data.Aeson                 as Aeson
+import           Data.AttoLisp              as L
+import qualified Data.Attoparsec.ByteString as AB
+import qualified Data.HashMap.Strict as HM
+import           Data.Maybe
+import qualified Data.Scientific            as Sci
+import qualified Data.Stringable            as S
+import qualified Data.Text                  as T
+import qualified Data.Vector                as V
+import           HS2AST.Types
 
 type Matrix a b = [[Maybe (Either a b)]]
 
@@ -110,3 +116,35 @@ collapse rows = map (map f) rows
   where f (Just (Left  x)) = Just x
         f (Just (Right x)) = Just x
         f Nothing = Nothing
+
+readAst :: String -> AST
+readAst s = case AB.eitherResult (AB.parse L.lisp (S.fromString s)) of
+                 Left err -> error ("Couldn't read AST: " ++ show err)
+                 Right x  -> x
+
+readClustered :: String -> Identifier -> Feature
+readClustered s id = fromJust . lookup id . clustersFrom $ s
+
+clustersFrom :: String -> [(Identifier, Feature)]
+clustersFrom s = map valToPair vals
+  where Just (Array arr) = decode . S.fromString $ s
+        vals      = V.toList arr
+        valToPair (Object o) = let Just (Aeson.Number f) = HM.lookup "cluster" o
+                                   rawId   = Object (HM.delete "cluster" o)
+                                   Just id = Aeson.decode . Aeson.encode $ rawId
+                                   Just f' = Sci.toBoundedInteger f
+                                in (id, f')
+
+data WithFeature = WC {
+    wcId      :: Identifier
+  , wcFeature :: Feature
+  }
+
+instance FromJSON WithFeature where
+  parseJSON (Object x) = do
+    p <- x .: "package"
+    m <- x .: "module"
+    n <- x .: "name"
+    f <- x .: "cluster"
+    return (WC { wcId = ID { idPackage = p, idModule = m, idName = n },
+                 wcFeature = f })
