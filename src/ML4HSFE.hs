@@ -124,7 +124,11 @@ readAst s = case AB.eitherResult (AB.parse L.lisp (S.fromString s)) of
                  Right x  -> x
 
 readClustered :: String -> Identifier -> Feature
-readClustered s id = fromJust . lookup id . clustersFrom $ s
+readClustered s id = case lookup id . clustersFrom $ s of
+  Just x  -> x
+  Nothing -> dEFAULT
+
+dEFAULT = 0
 
 clustersFrom :: String -> [(Identifier, Feature)]
 clustersFrom s = map valToPair vals
