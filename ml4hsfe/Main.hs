@@ -6,4 +6,6 @@ import System.IO
 
 main = do input  <- getContents
           rawAst <- getEnv "AST"
-          putStrLn (process rawAst input)
+          width  <- getEnv "WIDTH"
+          height <- getEnv "HEIGHT"
+          putStrLn (process (read width) (read height) rawAst input)

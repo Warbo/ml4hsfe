@@ -154,15 +154,20 @@ instance FromJSON WithFeature where
     return (WC { wcId = ID { idPackage = p, idModule = m, idName = n },
                  wcFeature = f })
 
-renderMatrix :: (Show a) => String -> [[Maybe a]] -> String
-renderMatrix def = unlines . map (List.intercalate ",") . renderMatrix' def
+renderMatrix :: (Show a) => String -> Int -> Int -> [[Maybe a]] -> String
+renderMatrix def w h = List.intercalate "," . concat . renderMatrix' def w h
 
-renderMatrix' :: (Show a) => String -> [[Maybe a]] -> [[String]]
-renderMatrix' def  = map (map f)
+renderMatrix' :: (Show a) => String -> Int -> Int -> [[Maybe a]] -> [[String]]
+renderMatrix' def w h = map (map f) . fitMatrix w h
   where f Nothing  = def
         f (Just x) = show x
 
-process :: String -> String -> String
-process rawAst rawDb = let matrix   = astToMatrix (readAst       rawAst)
-                           features = getFeatures (readClustered rawDb) matrix
-                        in renderMatrix "0" features
+fitMatrix :: Int -> Int -> [[Maybe a]] -> [[Maybe a]]
+fitMatrix width height m = padTo height empty (map (padTo width Nothing) m)
+  where padTo n x xs = take n (xs ++ replicate n x)
+        empty        = replicate width Nothing
+
+process :: Int -> Int -> String -> String -> String
+process w h rawAst rawDb = let matrix   = astToMatrix (readAst       rawAst)
+                               features = getFeatures (readClustered rawDb) matrix
+                            in renderMatrix "0" w h features

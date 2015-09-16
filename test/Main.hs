@@ -28,6 +28,9 @@ main = defaultMain $ testGroup "All tests" [
   , testProperty "Can lookup JSON clusters"         canLookupClusters
   , testProperty "Example JSON works"               exampleCluster
   , testProperty "Default feature is used"          defaultFeatureUsed
+  , testProperty "Matrix fits width"                matrixFitsWidth
+  , testProperty "Matrix fits height"               matrixFitsHeight
+  , testProperty "Matrix rendered to line"          matrixRenderedToLine
   ]
 
 canExtractIds ids = forAll (sexprWith ids) canExtract
@@ -116,8 +119,20 @@ exampleCluster = readClustered arr i1 == 3 &&
                                  , idPackage = x ++ "Pkg" })
                        ["foo", "bar"]
 
-defaultFeatureUsed :: [[Maybe Int]] -> String -> Bool
-defaultFeatureUsed m d = outCount >= inCount
-  where rows     = renderMatrix' d m
-        inCount  = length . filter isNothing . concat $ m
+defaultFeatureUsed :: Int -> Int -> [[Maybe Int]] -> String -> Bool
+defaultFeatureUsed w h m d = outCount >= inCount
+  where rows     = renderMatrix' d w h m
+        inCount  = length . filter isNothing . concat . fitMatrix w h $ m
         outCount = length . filter (== d)    . concat $ rows
+
+matrixFitsWidth (Positive w) (Positive h) ast = all ((== w) . length) matrix
+  where matrix = fitMatrix w h (astToMatrix ast)
+
+matrixFitsHeight (Positive w) (Positive h) ast = length matrix == h
+  where matrix = fitMatrix w h (astToMatrix ast)
+
+matrixRenderedToLine (Positive w) (Positive h) ast = commas == w * h - 1
+  where commas   = length . filter (== ',') $ rendered
+        matrix   = astToMatrix ast
+        features = getFeatures (length . idName) matrix
+        rendered = renderMatrix "0" w h features
