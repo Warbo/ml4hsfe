@@ -35,7 +35,7 @@ extractId (L.List xs) | have extractPkg  xs &&
   let [p] = mapMaybe extractPkg  xs
       [n] = mapMaybe extractName xs
       [m] = mapMaybe extractMod  xs
-   in Just (ID { idName = n, idPackage = p, idModule = m })
+   in Just ID { idName = n, idPackage = p, idModule = m }
 extractId _ = Nothing
 
 have :: (a -> Maybe b) -> [a] -> Bool
@@ -65,8 +65,7 @@ countLeaves (L.List xs)  = sum (map countLeaves xs)
 
 longest :: [[a]] -> Int
 longest = longest' 0
-  where longest' n []     = n
-        longest' n (x:xs) = longest' (max n (length x)) xs
+  where longest' = foldl (\n x -> max n (length x))
 
 astToMatrix' :: AST -> PreMatrix
 astToMatrix' (L.String x) = [[Just (Right (T.unpack x))]]
@@ -94,13 +93,13 @@ safeTail []     = Nothing
 subIdsWith :: (Identifier -> a)
            -> Matrix Identifier b
            -> Matrix a b
-subIdsWith f rows = map (map switch) rows
+subIdsWith f = map (map switch)
   where switch (Just (Left id)) = Just (Left (f id))
         switch (Just (Right x)) = Just (Right x)
         switch Nothing          = Nothing
 
 subStrings :: Matrix a String -> Matrix a Feature
-subStrings rows = map (map switch) rows
+subStrings = map (map switch)
   where switch (Just (Right x)) = Just (Right (stringFeature x))
         switch (Just (Left  x)) = Just (Left x)
         switch Nothing          = Nothing
@@ -113,7 +112,7 @@ getFeatures :: (Identifier -> Feature) -> PreMatrix -> Features
 getFeatures f m = collapse (subStrings (subIdsWith f m))
 
 collapse :: [[Maybe (Either a a)]] -> [[Maybe a]]
-collapse rows = map (map f) rows
+collapse = map (map f)
   where f (Just (Left  x)) = Just x
         f (Just (Right x)) = Just x
         f Nothing = Nothing
@@ -124,9 +123,7 @@ readAst s = case AB.eitherResult (AB.parse L.lisp (S.fromString s)) of
                  Right x  -> x
 
 readClustered :: String -> Identifier -> Feature
-readClustered s id = case lookup id . clustersFrom $ s of
-  Just x  -> x
-  Nothing -> dEFAULT
+readClustered s id = fromMaybe dEFAULT (lookup id . clustersFrom $ s)
 
 dEFAULT = 0
 
@@ -151,8 +148,8 @@ instance FromJSON WithFeature where
     m <- x .: "module"
     n <- x .: "name"
     f <- x .: "cluster"
-    return (WC { wcId = ID { idPackage = p, idModule = m, idName = n },
-                 wcFeature = f })
+    return WC { wcId = ID { idPackage = p, idModule = m, idName = n },
+                wcFeature = f }
 
 renderMatrix :: (Show a) => String -> Int -> Int -> [[Maybe a]] -> String
 renderMatrix def w h = List.intercalate "," . concat . renderMatrix' def w h

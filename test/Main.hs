@@ -54,7 +54,7 @@ matricesHaveIds id ast = matrixContains id matrix
   where matrix = astToMatrix (L.List [idToAst id, ast])
 
 matrixContains :: Identifier -> PreMatrix -> Bool
-matrixContains id xs = any (Just (Left (cleanId id)) `elem`) xs
+matrixContains id = any (Just (Left (cleanId id)) `elem`)
 
 idToAst id = mkNode [mkNode [mkLeaf "pkg",  mkLeaf (idPackage id)],
                      mkNode [mkLeaf "name", mkLeaf (idName    id)],
