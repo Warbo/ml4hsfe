@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Grapher where
 
+import           Data.Aeson
+import qualified Data.ByteString.Lazy as B
 import           Data.Graph
 import           Data.Text  (Text)
-import           Jparse
-
+import           Types
 
 type Atom = (Text, Text, Text)
 type Graphable = [(Atom, Atom,[Atom])]
-
 
 instance Show v => Show (SCC v) where
   show (AcyclicSCC v) = show [v]
@@ -28,3 +28,11 @@ extractGraphable ASTId {
                         package = p,
                         dependencies = d
                         } = ((n,m,p), (n,m,p), extractAtoms d)
+
+parse :: B.ByteString -> [ASTId]
+parse s = case eitherDecode s of
+               Left err -> error err
+               Right ps -> ps
+
+process :: [ASTId] -> [[ASTId]]
+process = stronglyConnComp . map extractGraphable
