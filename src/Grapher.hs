@@ -5,9 +5,10 @@ import           Data.Aeson
 import qualified Data.ByteString.Lazy as B
 import           Data.Graph
 import           Data.Text  (Text)
+import           HS2AST.Types
 import           Types
 
-type Atom = (Text, Text, Text)
+type Atom      = (String, String, String)
 type Graphable = [(Atom, Atom,[Atom])]
 
 instance Show v => Show (SCC v) where
@@ -15,24 +16,22 @@ instance Show v => Show (SCC v) where
   show (CyclicSCC lv) = show lv
 
 -- Handles the case of the Json Key being a Maybe [ASTId]
-extractAtoms :: Maybe [ASTId] -> [Atom]
-extractAtoms (Just a)      = map (\ x -> (name x, modu x, package x)) a
-extractAtoms _             = []
+extractAtoms :: [Identifier] -> [Atom]
+extractAtoms a = map (\x -> (idName x, idModule x, idPackage x)) a
 
 
 -- Turns a Json object into a tuple that's acceptable by graphFromEdges
 extractGraphable :: ASTId -> (Atom , Atom, [Atom])
-extractGraphable ASTId {
-                        name = n,
-                        modu = m,
-                        package = p,
-                        dependencies = d
-                        } = ((n,m,p), (n,m,p), extractAtoms d)
+extractGraphable x = let n = aName    x
+                         m = aModule  x
+                         p = aPackage x
+                         d = aDeps    x
+                      in ((n,m,p), (n,m,p), extractAtoms d)
 
 parse :: B.ByteString -> [ASTId]
 parse s = case eitherDecode s of
                Left err -> error err
                Right ps -> ps
 
-process :: [ASTId] -> [[ASTId]]
+process :: [ASTId] -> [SCC Atom]
 process = stronglyConnComp . map extractGraphable

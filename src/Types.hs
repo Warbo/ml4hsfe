@@ -10,6 +10,10 @@ data ASTId = ASTId { aId :: Identifier
                    , aDeps :: [Identifier]
                    } deriving (Show, Eq)
 
+aName    = idName    . aId
+aPackage = idPackage . aId
+aModule  = idModule  . aId
+
 instance ToJSON ASTId where
   toJSON x = let i = aId x
               in object [

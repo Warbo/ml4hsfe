@@ -1,8 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
-import           Data.Aeson
+module Main where
 
 import qualified Data.ByteString.Lazy as B
-import           Jparse
+import           Grapher
 
 main :: IO ()
 main = do c <- B.getContents
