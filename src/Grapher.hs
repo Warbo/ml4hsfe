@@ -17,7 +17,7 @@ instance Show v => Show (SCC v) where
 
 -- Handles the case of the Json Key being a Maybe [ASTId]
 extractAtoms :: [Identifier] -> [Atom]
-extractAtoms a = map (\x -> (idName x, idModule x, idPackage x)) a
+extractAtoms = map (\x -> (idName x, idModule x, idPackage x))
 
 
 -- Turns a Json object into a tuple that's acceptable by graphFromEdges
