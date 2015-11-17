@@ -17,7 +17,7 @@ import Var
 sexprWith is = do x <- exprWith is
                   return (toSexp dummyDb x)
 
-exprWith :: [Identifier] -> Gen (Expr Var)
+exprWith :: [Identifier] -> Gen CoreExpr
 exprWith []     = arbitrary
 exprWith (i:is) = do tail <- exprWith is
                      sort <- elements ["DataCon"] -- ,"Var", "TyCon"]

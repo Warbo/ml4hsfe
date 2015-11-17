@@ -2,6 +2,7 @@
 
 module Main where
 
+import           CoreSyn
 import           Data.Aeson
 import qualified Data.AttoLisp       as L
 import qualified Data.HashMap.Strict as HM
@@ -31,6 +32,9 @@ main = defaultMain $ testGroup "All tests" [
   , testProperty "Matrix fits width"                matrixFitsWidth
   , testProperty "Matrix fits height"               matrixFitsHeight
   , testProperty "Matrix rendered to line"          matrixRenderedToLine
+  , testProperty "Types erased"                     typesErased
+  , testProperty "No types remaining"               noTypes
+  , testProperty "No types in Case"                 noCaseType
   ]
 
 canExtractIds ids = forAll (sexprWith ids) canExtract
@@ -136,3 +140,25 @@ matrixRenderedToLine (Positive w) (Positive h) ast = commas == w * h - 1
         matrix   = astToMatrix ast
         features = getFeatures (length . idName) matrix
         rendered = renderMatrix "0" w h features
+
+typesErased = isNothing (erase (L.String "Type"))
+
+hasType (L.String s)  = s `elem` ["Type", "TyCon", "TyConApp", "Tick",
+                                  "TyVarTy", "Cast", "Coercion"]
+hasType (L.List   zs) = any hasType zs
+
+noTypes :: CoreExpr -> Bool
+noTypes x = case erase (toSexp dummyDb x) of
+                 Nothing -> discard
+                 Just y  -> not (hasType y)
+
+noCaseType :: CoreExpr -> Bool
+noCaseType x = case erase (toSexp dummyDb x) of
+                    Nothing -> discard
+                    Just y  -> maxCase y < 4
+
+maxCase (L.String _)                  = 0
+maxCase (L.List (L.String "Case":xs)) = max (length xs) (safeMax (map maxCase xs))
+maxCase (L.List xs)                   = safeMax (map maxCase xs)
+
+safeMax xs = if null xs then 0 else maximum xs

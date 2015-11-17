@@ -168,3 +168,9 @@ process :: Int -> Int -> String -> String -> String
 process w h rawAst rawDb = let matrix   = astToMatrix (readAst       rawAst)
                                features = getFeatures (readClustered rawDb) matrix
                             in renderMatrix "0" w h features
+
+erase :: AST -> Maybe AST
+erase x = case x of
+  L.String "Type" -> Nothing
+  L.List xs       -> Just (L.List xs) --(mapMaybe erase xs))
+  _               -> Nothing
