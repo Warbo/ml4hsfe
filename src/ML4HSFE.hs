@@ -53,7 +53,7 @@ extractMod (L.List [L.String "mod", L.String m]) = Just (T.unpack m)
 extractMod _ = Nothing
 
 astToMatrix :: AST -> PreMatrix
-astToMatrix = normaliseLengths . astToMatrix'
+astToMatrix = normaliseLengths . astToMatrix' . erase
 
 normaliseLengths :: [[Maybe a]] -> [[Maybe a]]
 normaliseLengths xss = map (padToLen (longest xss)) xss
@@ -171,6 +171,21 @@ process w h rawAst rawDb = let matrix   = astToMatrix (readAst       rawAst)
 
 erase :: AST -> Maybe AST
 erase x = case x of
-  L.String "Type" -> Nothing
-  L.List xs       -> Just (L.List xs) --(mapMaybe erase xs))
+  -- Discard type-level leaves
+  "Type"     -> Nothing
+  "Coercion" -> Nothing
+  "Tick"     -> Nothing
+  "Cast"     -> Nothing
+
+  -- Discard whole nodes if they're completely at the type-level
+  L.List ("Type":xs)     -> Nothing
+  L.List ("Coercion":xs) -> Nothing
+
+  -- Unwrap type-level annotations from values
+  L.List ["Case",e,i,t,alts] -> Just (L.List ["Case", erase e, i, erase alts])
+  L.List ["Cast",e,t]        -> erase e
+  L.List ["Tick",t,e]        -> erase e
+
+  -- Recurse
+  L.List xs       -> Just (L.List (mapMaybe erase xs))
   _               -> Nothing
