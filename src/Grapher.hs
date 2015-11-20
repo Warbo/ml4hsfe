@@ -8,8 +8,8 @@ import           Data.Text  (Text)
 import           HS2AST.Types
 import           Types
 
-type Atom      = (String, String, String)
-type Graphable = [(Atom, Atom,[Atom])]
+type Atom      =  (String, String, String)
+type Graphable = [(Atom,   Atom,   [Atom])]
 
 instance Show v => Show (SCC v) where
   show (AcyclicSCC v) = show [v]
@@ -18,7 +18,6 @@ instance Show v => Show (SCC v) where
 -- Handles the case of the Json Key being a Maybe [ASTId]
 extractAtoms :: [Identifier] -> [Atom]
 extractAtoms = map (\x -> (idName x, idModule x, idPackage x))
-
 
 -- Turns a Json object into a tuple that's acceptable by graphFromEdges
 extractGraphable :: ASTId -> (Atom , Atom, [Atom])
