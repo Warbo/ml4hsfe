@@ -53,7 +53,7 @@ extractMod (L.List [L.String "mod", L.String m]) = Just (T.unpack m)
 extractMod _ = Nothing
 
 astToMatrix :: AST -> PreMatrix
-astToMatrix = normaliseLengths . astToMatrix' . erase
+astToMatrix ast = normaliseLengths (maybe [] astToMatrix' (erase ast))
 
 normaliseLengths :: [[Maybe a]] -> [[Maybe a]]
 normaliseLengths xss = map (padToLen (longest xss)) xss
@@ -176,13 +176,19 @@ erase x = case x of
   "Coercion" -> Nothing
   "Tick"     -> Nothing
   "Cast"     -> Nothing
+  "TyCon"    -> Nothing
+  "TyConApp" -> Nothing
+  "TyVarTy"  -> Nothing
 
   -- Discard whole nodes if they're completely at the type-level
   L.List ("Type":xs)     -> Nothing
   L.List ("Coercion":xs) -> Nothing
+  L.List ("TyCon":xs)    -> Nothing
+  L.List ("TyConApp":xs) -> Nothing
+  L.List ("TyVarTy":xs)  -> Nothing
 
-  -- Unwrap type-level annotations from values
-  L.List ["Case",e,i,t,alts] -> Just (L.List ["Case", erase e, i, erase alts])
+  -- Remove type-level annotations from values
+  L.List ["Case",e,i,t,alts] -> erase (L.List ["Case", e, i, alts])
   L.List ["Cast",e,t]        -> erase e
   L.List ["Tick",t,e]        -> erase e
 
