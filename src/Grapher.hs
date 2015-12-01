@@ -15,6 +15,13 @@ instance Show v => Show (SCC v) where
   show (AcyclicSCC v) = show [v]
   show (CyclicSCC lv) = show lv
 
+toIds :: SCC Atom -> [Identifier]
+toIds (AcyclicSCC a)  = [atomToId a]
+toIds (CyclicSCC  as) = map atomToId as
+
+renderAll :: [SCC Atom] -> B.ByteString
+renderAll = encode . map toIds
+
 -- Handles the case of the Json Key being a Maybe [ASTId]
 extractAtoms :: [Identifier] -> [Atom]
 extractAtoms = map (\x -> (idName x, idModule x, idPackage x))
@@ -32,5 +39,10 @@ parse s = case eitherDecode s of
                Left err -> error err
                Right ps -> ps
 
-process :: [ASTId] -> [SCC Atom]
-process = stronglyConnComp . map extractGraphable
+group :: [ASTId] -> [SCC Atom]
+group = stronglyConnComp . map extractGraphable
+
+process :: [ASTId] -> B.ByteString
+process = renderAll . group
+
+atomToId (n, m, p) = ID { idPackage = p, idModule = m, idName = n }
