@@ -46,7 +46,7 @@ mapId f (ID x y z) = ID (f x) (f y) (f z)
 cleanId = mapId filterLisp
 
 matricesLineUp :: AST -> Bool
-matricesLineUp ast = length (nub (map length matrix)) == 1
+matricesLineUp ast = length (nub (map length matrix)) < 2
   where matrix = astToMatrix ast
 
 rowsMerge :: [Int] -> [Int] -> [Int] -> [Int] -> [Int] -> Bool
