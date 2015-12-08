@@ -2,7 +2,7 @@
 
 module Main where
 
-import           CoreSyn
+import qualified CoreSyn             as C
 import           Data.Aeson
 import qualified Data.AttoLisp       as L
 import qualified Data.HashMap.Strict as HM
@@ -14,7 +14,7 @@ import qualified Data.Vector         as V
 import           Generators
 import           HS2AST.Sexpr
 import           HS2AST.Types
-import           ML4HSFE
+import           ML4HSFE             as FE
 import           Test.QuickCheck
 import           Test.Tasty             (defaultMain, testGroup, localOption)
 import           Test.Tasty.QuickCheck
@@ -33,8 +33,7 @@ main = defaultMain $ testGroup "All tests" [
   , testProperty "Matrix fits height"               matrixFitsHeight
   , testProperty "Matrix rendered to line"          matrixRenderedToLine
   , testProperty "Types erased"                     typesErased
-  , testProperty "No types remaining"               noTypes
-  , testProperty "No types in Case"                 noCaseType
+  , testProperty "Syntax is expected"               syntaxMatches
   ]
 
 canExtractIds ids = forAll (sexprWith ids) canExtract
@@ -141,24 +140,53 @@ matrixRenderedToLine (Positive w) (Positive h) ast = commas == w * h - 1
         features = getFeatures (length . idName) matrix
         rendered = renderMatrix "0" w h features
 
-typesErased = isNothing (erase (L.String "Type"))
+typesErased = isNothing (readExpr (L.String "Type"))
 
 hasType (L.String s)  = s `elem` ["Type", "TyCon", "TyConApp", "Tick",
                                   "TyVarTy", "Cast", "Coercion"]
 hasType (L.List   zs) = any hasType zs
 
-noTypes :: CoreExpr -> Bool
-noTypes x = case erase (toSexp dummyDb x) of
-                 Nothing -> discard
-                 Just y  -> not (hasType y)
+syntaxMatches :: AST -> Bool
+syntaxMatches ast = case readExpr ast of
+                         Nothing -> discard
+                         Just x  -> walkE x
 
-noCaseType :: CoreExpr -> Bool
-noCaseType x = case erase (toSexp dummyDb x) of
-                    Nothing -> discard
-                    Just y  -> maxCase y < 4
+canReadLocalVars x =
+  case readLocal (L.List ["name", L.String (Str.fromString x)]) of
+    Nothing     -> error "Failed to read"
+    Just (L x') -> x == x'
 
-maxCase (L.String _)                  = 0
-maxCase (L.List (L.String "Case":xs)) = max (length xs) (safeMax (map maxCase xs))
-maxCase (L.List xs)                   = safeMax (map maxCase xs)
+walkE e = case e of
+  Var  x      -> walkI   x
+  Lit  x      -> walkLit x
+  App  x y    -> walkE   x && walkE y
+  Lam  x y    -> walkL   x && walkE y
+  Let  x y    -> walkB   x && walkE y
+  Case x y zs -> walkE   x && walkL y && all walkA zs
+  Type        -> True
 
-safeMax xs = if null xs then 0 else maximum xs
+walkI i = case i of
+  Local       x -> walkL x
+  Global      x -> walkG x
+  Constructor x -> walkC x
+
+walkC () = True
+
+walkL (L x) = length x >= 0
+
+walkB (NonRec x)  = walkBinder x
+walkB (Rec    xs) = all walkBinder xs
+
+walkBinder (Bind x y) = walkL x && walkE y
+
+walkLit LitNum = True
+walkLit LitStr = True
+
+walkA (Alt ac e ls) = walkAC ac && walkE e && all walkL ls
+
+walkG (G x) = True
+
+walkAC a = case a of
+  DataAlt x -> walkC   x
+  LitAlt  x -> walkLit x
+  Default   -> True

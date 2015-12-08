@@ -22,6 +22,37 @@ type Feature = Int
 
 type Features = [[Maybe Feature]]
 
+data Expr = Var  Id
+          | Lit  Literal
+          | App  Expr  Expr
+          | Lam  Local Expr
+          | Let  Bind  Expr
+          | Case Expr  Local [Alt]
+          | Type
+
+data Id = Local       Local
+        | Global      Global
+        | Constructor Constructor
+
+data Literal = LitNum
+             | LitStr
+
+data Alt = Alt AltCon Expr [Local]
+
+data AltCon = DataAlt Constructor
+            | LitAlt  Literal
+            | Default
+
+data Bind = NonRec Binder
+          | Rec [Binder]
+
+data Binder = Bind Local Expr
+
+newtype Local  = L String
+newtype Global = G { unGlobal :: Identifier }
+
+type Constructor = ()
+
 extractIds :: AST -> [Identifier]
 extractIds (L.List xs) = case extractId (L.List xs) of
   Just x  -> x : concatMap extractIds xs
@@ -53,7 +84,7 @@ extractMod (L.List [L.String "mod", L.String m]) = Just (T.unpack m)
 extractMod _ = Nothing
 
 astToMatrix :: AST -> PreMatrix
-astToMatrix ast = normaliseLengths (maybe [] astToMatrix' (erase ast))
+astToMatrix ast = normaliseLengths (maybe [] exprToMatrix (readExpr ast))
 
 normaliseLengths :: [[Maybe a]] -> [[Maybe a]]
 normaliseLengths xss = map (padToLen (longest xss)) xss
@@ -67,12 +98,8 @@ longest :: [[a]] -> Int
 longest = longest' 0
   where longest' = foldl (\n x -> max n (length x))
 
-astToMatrix' :: AST -> PreMatrix
-astToMatrix' (L.String x) = [[Just (Right (T.unpack x))]]
-astToMatrix' (L.List xs)  = case extractId (L.List xs) of
-                                 Just id -> [[Just (Left id)]]
-                                 Nothing -> [] : mergeRows subtrees
-  where subtrees = map astToMatrix' xs
+exprToMatrix :: Expr -> PreMatrix
+exprToMatrix = undefined
 
 mergeRows :: [[[a]]] -> [[a]]
 mergeRows = trimEmpty . mergeRows'
@@ -169,29 +196,9 @@ process w h rawAst rawDb = let matrix   = astToMatrix (readAst       rawAst)
                                features = getFeatures (readClustered rawDb) matrix
                             in renderMatrix "0" w h features
 
-erase :: AST -> Maybe AST
-erase x = case x of
-  -- Discard type-level leaves
-  "Type"     -> Nothing
-  "Coercion" -> Nothing
-  "Tick"     -> Nothing
-  "Cast"     -> Nothing
-  "TyCon"    -> Nothing
-  "TyConApp" -> Nothing
-  "TyVarTy"  -> Nothing
+readExpr :: AST -> Maybe Expr
+readExpr (L.List ["Lam", l, e]) = Lam <$> readLocal l <*> readExpr e
 
-  -- Discard whole nodes if they're completely at the type-level
-  L.List ("Type":xs)     -> Nothing
-  L.List ("Coercion":xs) -> Nothing
-  L.List ("TyCon":xs)    -> Nothing
-  L.List ("TyConApp":xs) -> Nothing
-  L.List ("TyVarTy":xs)  -> Nothing
-
-  -- Remove type-level annotations from values
-  L.List ["Case",e,i,t,alts] -> erase (L.List ["Case", e, i, alts])
-  L.List ["Cast",e,t]        -> erase e
-  L.List ["Tick",t,e]        -> erase e
-
-  -- Recurse
-  L.List xs       -> Just (L.List (mapMaybe erase xs))
-  _               -> Nothing
+readLocal :: AST -> Maybe Local
+readLocal (L.List ["name", L.String x]) = Just (L (S.toString x))
+readLocal _                             = Nothing
