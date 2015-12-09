@@ -34,6 +34,8 @@ main = defaultMain $ testGroup "All tests" [
   , testProperty "Matrix rendered to line"          matrixRenderedToLine
   , testProperty "Types erased"                     typesErased
   , testProperty "Syntax is expected"               syntaxMatches
+  , testProperty "Unwrap lists"                     canUnwrapLists
+  , testProperty "Reinstate lists"                  canReinstateLists
   ]
 
 canExtractIds ids = forAll (sexprWith ids) canExtract
@@ -146,10 +148,31 @@ hasType (L.String s)  = s `elem` ["Type", "TyCon", "TyConApp", "Tick",
                                   "TyVarTy", "Cast", "Coercion"]
 hasType (L.List   zs) = any hasType zs
 
-syntaxMatches :: AST -> Bool
-syntaxMatches ast = case readExpr ast of
-                         Nothing -> discard
-                         Just x  -> walkE x
+canUnwrapLists ast = noNest (unwrapAst ast)
+  where noNest (L.List [L.List _]) = False
+        noNest (L.List xs)         = all noNest xs
+        noNest _                   = True
+
+canReinstateLists :: C.CoreExpr -> Bool
+canReinstateLists e = case getRecs (toSexp (const Nothing) e) of
+    (L.List ["Rec", x]:_) -> case asList x of
+      Nothing -> False
+      Just x' -> valid x x'
+    (L.List ("Rec":_):_)  -> error "Unexpected Rec form"
+    [] -> discard
+  where getRecs x@(L.List ("Rec":_)) = [x]
+        getRecs   (L.List xs)        = concatMap getRecs xs
+        getRecs   _                  = []
+        valid x x' = length x' == length' x
+        length' (L.List ["[]"])         = 0
+        length' (L.List ["(:)", x, xs]) = 1 + length' xs
+        length' _                       = error "Invalid uninstated list"
+
+syntaxMatches :: C.CoreExpr -> Bool
+syntaxMatches = evalTree . readExpr . toSexp (const Nothing)
+
+evalTree Nothing  = discard
+evalTree (Just x) = walkE x
 
 canReadLocalVars x =
   case readLocal (L.List ["name", L.String (Str.fromString x)]) of
