@@ -16,8 +16,8 @@ let
         isLibrary = true;
         isExecutable = true;
         libraryHaskellDepends = [
-          aeson atto-lisp attoparsec base HS2AST scientific stringable text
-          unordered-containers vector
+          aeson atto-lisp attoparsec base HS2AST QuickCheck scientific
+          stringable text unordered-containers vector
         ];
         executableHaskellDepends = [ base ];
         testHaskellDepends = [
@@ -30,8 +30,8 @@ let
       };
 
   haskellPackages = if compiler == "default"
-                      then pkgs.haskellPackages
-                      else pkgs.haskell.packages.${compiler};
+                       then pkgs.haskellPackages
+                       else pkgs.haskell.packages.${compiler};
 
   drv = haskellPackages.callPackage f {};
 

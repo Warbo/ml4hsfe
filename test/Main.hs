@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
 module Main where
 
@@ -13,17 +13,18 @@ import           Data.String
 import qualified Data.Stringable     as Str
 import qualified Data.Vector         as V
 import           FastString
-import           ML4HSFE.FeatureExtraction
 import           Generators
 import           HS2AST.Sexpr
-import           HS2AST.Types
+import           HS2AST.Types hiding (Node)
 import           ML4HSFE             as FE
-import           PackageConfig
+import           ML4HSFE.FeatureExtraction
+import           ML4HSFE.Generators
 import           ML4HSFE.Parse
+import           ML4HSFE.Types
+import           PackageConfig
 import           Test.QuickCheck
 import           Test.Tasty             (defaultMain, testGroup, localOption)
 import           Test.Tasty.QuickCheck
-import           ML4HSFE.Types
 
 main = defaultMain $ testGroup "All tests" [
     testProperty "Can extract IDs from AST"         canExtractIds
@@ -40,8 +41,10 @@ main = defaultMain $ testGroup "All tests" [
   , testProperty "Matrix rendered to line"          matrixRenderedToLine
   , testProperty "Types erased"                     typesErased
   , testProperty "Syntax is expected"               syntaxMatches
-  , testProperty "Unwrap lists"                     canUnwrapLists
+  , testProperty "Unwrap ASTs"                      canUnwrapAsts
   , testProperty "Reinstate lists"                  canReinstateLists
+  , testProperty "Can read local vars"              canReadLocalVars
+  , testProperty "Expressions get trees"            exprsGetTrees
   ]
 
 canExtractIds ids = forAll (sexprWith ids) canExtract
@@ -154,7 +157,7 @@ hasType (L.String s)  = s `elem` ["Type", "TyCon", "TyConApp", "Tick",
                                   "TyVarTy", "Cast", "Coercion"]
 hasType (L.List   zs) = any hasType zs
 
-canUnwrapLists ast = noNest (unwrapAst ast)
+canUnwrapAsts ast = noNest (unwrapAst ast)
   where noNest (L.List [L.List _]) = False
         noNest (L.List xs)         = all noNest xs
         noNest _                   = True
@@ -184,6 +187,10 @@ canReadLocalVars x =
   case readLocal (L.List ["name", L.String (Str.fromString x)]) of
     Nothing     -> error "Failed to read"
     Just (L x') -> x == x'
+
+exprsGetTrees ctx (EO (e, cs)) = walkTree (toTree cs ctx e)
+
+walkTree (Node x xs) = x >= 0 && all walkTree xs
 
 walkE e = case e of
   Var  x      -> walkI   x
