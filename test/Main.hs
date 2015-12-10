@@ -9,12 +9,15 @@ import qualified Data.HashMap.Strict as HM
 import           Data.List
 import           Data.Maybe
 import qualified Data.Set            as S
+import           Data.String
 import qualified Data.Stringable     as Str
 import qualified Data.Vector         as V
+import           FastString
 import           Generators
 import           HS2AST.Sexpr
 import           HS2AST.Types
 import           ML4HSFE             as FE
+import           PackageConfig
 import           Test.QuickCheck
 import           Test.Tasty             (defaultMain, testGroup, localOption)
 import           Test.Tasty.QuickCheck
@@ -168,10 +171,10 @@ canReinstateLists e = case getRecs (toSexp (const Nothing) e) of
         length' (L.List ["(:)", x, xs]) = 1 + length' xs
         length' _                       = error "Invalid uninstated list"
 
-syntaxMatches :: C.CoreExpr -> Bool
-syntaxMatches = evalTree . readExpr . toSexp (const Nothing)
+syntaxMatches :: String -> C.CoreExpr -> Bool
+syntaxMatches p = evalTree . readExpr . toSexp (const (Just ""))
 
-evalTree Nothing  = discard
+evalTree Nothing  = error "Got no tree"
 evalTree (Just x) = walkE x
 
 canReadLocalVars x =
@@ -213,3 +216,6 @@ walkAC a = case a of
   DataAlt x -> walkC   x
   LitAlt  x -> walkLit x
   Default   -> True
+
+instance IsString PackageName where
+  fromString = PackageName . mkFastString
