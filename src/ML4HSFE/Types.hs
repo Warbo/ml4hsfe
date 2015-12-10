@@ -1,4 +1,4 @@
-module Types where
+module ML4HSFE.Types where
 
 import HS2AST.Types
 

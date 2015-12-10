@@ -1,6 +1,6 @@
-module FeatureExtraction where
+module ML4HSFE.FeatureExtraction where
 
-import Types
+import ML4HSFE.Types
 
 toTree x = case x of
   Var i       -> Node fVar  [toTreeI i]

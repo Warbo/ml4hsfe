@@ -13,14 +13,17 @@ import           Data.String
 import qualified Data.Stringable     as Str
 import qualified Data.Vector         as V
 import           FastString
+import           ML4HSFE.FeatureExtraction
 import           Generators
 import           HS2AST.Sexpr
 import           HS2AST.Types
 import           ML4HSFE             as FE
 import           PackageConfig
+import           ML4HSFE.Parse
 import           Test.QuickCheck
 import           Test.Tasty             (defaultMain, testGroup, localOption)
 import           Test.Tasty.QuickCheck
+import           ML4HSFE.Types
 
 main = defaultMain $ testGroup "All tests" [
     testProperty "Can extract IDs from AST"         canExtractIds

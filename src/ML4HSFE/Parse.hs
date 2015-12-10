@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Parse where
+module ML4HSFE.Parse where
 
 import qualified Data.AttoLisp as L
 import           Data.Char
 import           GHC.Stack
 import           HS2AST.Types
 import qualified Data.Stringable as S
-import           Types
+import           ML4HSFE.Types
 
 -- | Our incoming s-expressions are a little awkward. Here we unwrap lists which
 --   are nested for no reason, e.g. ((foo bar)) -> (foo bar)

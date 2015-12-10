@@ -13,10 +13,10 @@ import qualified Data.Scientific            as Sci
 import qualified Data.Stringable            as S
 import qualified Data.Text                  as T
 import qualified Data.Vector                as V
-import           FeatureExtraction
+import           ML4HSFE.FeatureExtraction
 import           HS2AST.Types
-import           Parse
-import           Types
+import           ML4HSFE.Parse
+import           ML4HSFE.Types
 
 extractIds :: AST -> [Identifier]
 extractIds (L.List xs) = case extractId (L.List xs) of
