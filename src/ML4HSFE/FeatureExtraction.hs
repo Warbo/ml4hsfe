@@ -57,7 +57,7 @@ phiL ctx x = case elemIndex x ctx of
   Just i  -> (2 * alpha) + i
 
 phiG :: Clusters -> Global -> Feature
-phiG c x = case findIndex (x `elem`) c of
+phiG cs x = case findIndex (x `elem`) cs of
   Nothing -> fRecursion
   Just i  -> i
 
@@ -84,3 +84,12 @@ fLitNum      = alpha + 17
 fLitStr      = alpha + 18
 
 alpha = 100
+
+level :: Int -> RoseTree -> [Feature]
+level 1 (Node f _)  = [f]
+level n (Node _ ts) = concatMap (level (n-1)) ts
+
+featureVec :: Int -> Int -> Clusters -> Expr -> [Feature]
+featureVec r c cs e = concatMap (\m -> pad (level m tree)) [1..r]
+  where tree   = toTree cs [] e
+        pad xs = take c (xs ++ repeat 0)

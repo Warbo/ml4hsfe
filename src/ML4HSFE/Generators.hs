@@ -45,7 +45,7 @@ arbBind n cs ctx = oneof [
   ]
 
 arbBinder :: Int -> Clusters -> Context -> Gen Binder
-arbBinder n cs ctx = Bind <$> arbL ctx <*> arbExpr n cs ctx
+arbBinder n cs ctx = Bind <$> arbitrary <*> arbExpr n cs ctx
 
 arbL :: Context -> Gen Local
 arbL = elements

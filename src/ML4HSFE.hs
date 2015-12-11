@@ -156,7 +156,20 @@ fitMatrix width height m = padTo height empty (map (padTo width Nothing) m)
   where padTo n x xs = take n (xs ++ replicate n x)
         empty        = replicate width Nothing
 
+renderVector :: [Feature] -> String
+renderVector = List.intercalate "," . map show
+
+clustersFrom' x = collate [] (clustersFrom x)
+  where collate cs [] = cs
+        collate cs ((x, i):xs) = collate (insert x i cs) xs
+        insert x i cs | i < 1 = error ("Can't insert at index " ++ show i)
+        insert x 1 (y:ys) = ((x:y):ys)
+        insert x i (y:ys) = y : insert x (i-1) ys
+        insert x i []     = insert x i [[]]
+
 process :: Int -> Int -> String -> String -> String
-process w h rawAst rawDb = let matrix   = astToMatrix (readAst       rawAst)
-                               features = getFeatures (readClustered rawDb) matrix
-                            in renderMatrix "0" w h features
+process c r rawAst rawDb = let ast = readAst rawAst
+                               cs  = map (map G) (clustersFrom' rawDb)
+                               Just exp = readExpr ast
+                               vec = featureVec c r cs exp
+                            in renderVector vec
