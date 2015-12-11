@@ -120,14 +120,22 @@ readClustered s id = fromMaybe dEFAULT (lookup id . clustersFrom $ s)
 dEFAULT = 0
 
 clustersFrom :: String -> [(Identifier, Feature)]
-clustersFrom s = map valToPair vals
+clustersFrom s = mapMaybe valToPair vals
   where Just (Array arr) = decode . S.fromString $ s
         vals      = V.toList arr
-        valToPair (Object o) = let Just (Aeson.Number f) = HM.lookup "cluster" o
-                                   rawId   = Object (HM.delete "cluster" o)
-                                   Just id = Aeson.decode . Aeson.encode $ rawId
-                                   Just f' = Sci.toBoundedInteger f
-                                in (id, f')
+
+valToPair (Object o) =
+  case map (`HM.lookup` o) ["cluster", "name", "module", "package"] of
+    [Just (Aeson.Number c),
+     Just (Aeson.String n),
+     Just (Aeson.String m),
+     Just (Aeson.String p)] -> Just (ID { idPackage = S.toString p
+                                        , idModule  = S.toString m
+                                        , idName    = S.toString n },
+                                     case Sci.toBoundedInteger c of
+                                          Just c' -> c'
+                                          Nothing -> error ("Cluster too big " ++ show c))
+    _ -> Nothing
 
 data WithFeature = WC {
     wcId      :: Identifier
