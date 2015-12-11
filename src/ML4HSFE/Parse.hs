@@ -106,3 +106,4 @@ readLit (L.List [L.String sort, val]) = case sort of
                                              "MachChar"   -> Just LitStr
                                              "MachStr"    -> Just LitStr
                                              _            -> errorWithStackTrace ("Unexpected literal " ++ S.toString sort)
+readLit x = errorWithStackTrace ("Unexpected readLit argument " ++ show x)
