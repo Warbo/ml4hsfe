@@ -55,6 +55,7 @@ readLocal :: AST -> Maybe Local
 readLocal (L.List ["Var", x])             = readLocal x
 readLocal (L.List (L.List ["name", x]:_)) = readLocal (L.List ["name", x]) -- QuickCheck puts globals in the locals...
 readLocal (L.List ["name", L.String x]) = Just (L (S.toString x))
+readLocal x = errorWithStackTrace ("Unexpected argument to readLocal " ++ show x)
 
 -- FIXME: Parsing s-expressions into Identifiers should be provided by HS2AST
 readId x = case x of
@@ -69,6 +70,7 @@ readId x = case x of
                                                  idModule  = S.toString m,
                                                  idName    = S.toString n
                                                })))
+  _ -> errorWithStackTrace ("Unexpected argument to readId " ++ show x)
 
 -- | Check if a name is that of a constructor
 isCons ":"   = True
@@ -93,6 +95,7 @@ readBind b = case b of
                                 bs'' <- sequence (map readBinder bs')
                                 return (Rec bs'')
   L.List ["NonRec", l, e] -> NonRec <$> (Bind <$> readLocal l <*> readExpr e)
+  _ -> errorWithStackTrace ("Unexpected argument to readBind " ++ show b)
 
 readBinder x = do (l, e) <- asPair x
                   l'     <- readLocal l
@@ -100,10 +103,17 @@ readBinder x = do (l, e) <- asPair x
                   return (Bind l' e')
 
 readLit :: AST -> Maybe Literal
-readLit (L.List [L.String sort, val]) = case sort of
-                                             "MachDouble" -> Just LitNum
-                                             "MachInt64"  -> Just LitNum
-                                             "MachChar"   -> Just LitStr
-                                             "MachStr"    -> Just LitStr
-                                             _            -> errorWithStackTrace ("Unexpected literal " ++ S.toString sort)
+readLit (L.List (L.String sort:_)) = case sort of
+                                             "MachChar"     -> Just LitStr
+                                             "MachStr"      -> Just LitStr
+                                             "MachNullAddr" -> Just LitNum
+                                             "MachInt"      -> Just LitNum
+                                             "MachInt64"    -> Just LitNum
+                                             "MachWord"     -> Just LitNum
+                                             "MachWord64"   -> Just LitNum
+                                             "MachFloat"    -> Just LitNum
+                                             "MachDouble"   -> Just LitNum
+                                             "MachLabel"    -> Just LitStr
+                                             "LitInteger"   -> Just LitNum
+                                             _              -> Just LitNum
 readLit x = errorWithStackTrace ("Unexpected readLit argument " ++ show x)
