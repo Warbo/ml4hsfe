@@ -54,34 +54,32 @@ localsIn' (Rec    bs) = localsIn bs
 phiL :: Context -> Local -> Feature
 phiL ctx x = case elemIndex x ctx of
   Nothing -> error (concat ["Local '", show x, "' not in context '", show ctx, "'"])
-  Just i  -> (2 * alpha) + i
+  Just i  -> Left $ (2 * alpha) + i
 
 phiG :: Clusters -> Global -> Feature
-phiG cs x = case findIndex (x `elem`) cs of
-  Nothing -> fRecursion
-  Just i  -> i
+phiG cs (G x) = Right x
 
-fRecursion   = 3 * alpha
+fRecursion   = Left $ 3 * alpha
 
-fAlt         = alpha + 0
-fDataAlt     = alpha + 1
-fLitAlt      = alpha + 2
-fDefault     = alpha + 3
-fNonRec      = alpha + 4
-fRec         = alpha + 5
-fBind        = alpha + 6
-fLet         = alpha + 7
-fCase        = alpha + 8
-fLocal       = alpha + 9
-fGlobal      = alpha + 10
-fConstructor = alpha + 11
-fVar         = alpha + 12
-fLam         = alpha + 13
-fApp         = alpha + 14
-fType        = alpha + 15
-fLit         = alpha + 16
-fLitNum      = alpha + 17
-fLitStr      = alpha + 18
+fAlt         = Left $ alpha + 0
+fDataAlt     = Left $ alpha + 1
+fLitAlt      = Left $ alpha + 2
+fDefault     = Left $ alpha + 3
+fNonRec      = Left $ alpha + 4
+fRec         = Left $ alpha + 5
+fBind        = Left $ alpha + 6
+fLet         = Left $ alpha + 7
+fCase        = Left $ alpha + 8
+fLocal       = Left $ alpha + 9
+fGlobal      = Left $ alpha + 10
+fConstructor = Left $ alpha + 11
+fVar         = Left $ alpha + 12
+fLam         = Left $ alpha + 13
+fApp         = Left $ alpha + 14
+fType        = Left $ alpha + 15
+fLit         = Left $ alpha + 16
+fLitNum      = Left $ alpha + 17
+fLitStr      = Left $ alpha + 18
 
 alpha = 100
 
@@ -92,4 +90,4 @@ level n (Node _ ts) = concatMap (level (n-1)) ts
 featureVec :: Int -> Int -> Clusters -> Expr -> [Feature]
 featureVec r c cs e = concatMap (\m -> pad (level m tree)) [1..r]
   where tree   = toTree cs [] e
-        pad xs = take c (xs ++ repeat 0)
+        pad xs = take c (xs ++ repeat (Left 0))

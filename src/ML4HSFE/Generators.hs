@@ -1,6 +1,8 @@
 module ML4HSFE.Generators where
 
+import Data.Char
 import HS2AST.Tests.Generators
+import HS2AST.Types
 import ML4HSFE.Types
 import Test.QuickCheck
 
@@ -62,3 +64,12 @@ instance Arbitrary ExprOf where
                  Positive n <- arbitrary
                  e <- arbExpr n cs []
                  return (EO (e, cs))
+
+safeId = do x <- arbitrary
+            return x {
+                idName    = safe $ idName x
+              , idModule  = safe $ idModule x
+              , idPackage = safe $ idPackage x
+              }
+
+safe = filter (\x -> isAscii x && isPrint x && x /= '\\')

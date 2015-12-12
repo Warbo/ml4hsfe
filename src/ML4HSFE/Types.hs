@@ -4,11 +4,7 @@ import HS2AST.Types
 
 data RoseTree = Node Feature [RoseTree] deriving (Show)
 
-type Matrix a b = [[Maybe (Either a b)]]
-
-type PreMatrix = Matrix Identifier String
-
-type Feature = Int
+type Feature = Either Int Identifier
 
 type Features = [[Maybe Feature]]
 
