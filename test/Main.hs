@@ -135,4 +135,4 @@ globalsIncluded (EO (x, cs)) (Positive r) (Positive c) =
   forAll safeId (globalsIncluded' x cs r c)
 
 globalsIncluded' x cs r c g = Str.toString (encode g) `isInfixOf` vec
-  where vec = renderVector (featureVec (r + 4) (c + 4) cs (App x (Var (Global (G g)))))
+  where vec = renderVector (featureVec (r + 30) (c + 30) cs (App x (Var (Global (G g)))))
