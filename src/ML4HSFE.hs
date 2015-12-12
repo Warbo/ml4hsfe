@@ -91,8 +91,8 @@ renderVector = (++ "]") . ("[" ++) . List.intercalate "," . map showFeature
 showFeature (Left n) = show n
 showFeature (Right g) = S.toString (Aeson.encode g)
 
-process :: Int -> Int -> String -> String -> String
-process c r rawAst rawDb = let ast = readAst rawAst
-                               Just exp = readExpr ast
-                               vec = featureVec c r [] exp
-                            in renderVector vec
+process :: Int -> Int -> String -> String
+process c r rawAst = let ast = readAst rawAst
+                         Just exp = readExpr ast
+                         vec = featureVec c r [] exp
+                      in renderVector vec
