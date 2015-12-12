@@ -94,5 +94,5 @@ showFeature (Right g) = S.toString (Aeson.encode g)
 process :: Int -> Int -> String -> String
 process c r rawAst = let ast = readAst rawAst
                          Just exp = readExpr ast
-                         vec = featureVec c r [] exp
+                         vec = featureVec c r exp
                       in renderVector vec

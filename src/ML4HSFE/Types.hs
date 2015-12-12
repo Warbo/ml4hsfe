@@ -45,5 +45,3 @@ newtype Global = G { unGlobal :: Identifier }  deriving (Show, Eq)
 type Constructor = ()
 
 type Context = [Local]
-
-type Clusters = [[Global]]

@@ -3,46 +3,46 @@ module ML4HSFE.FeatureExtraction where
 import Data.List
 import ML4HSFE.Types
 
-toTree :: Clusters -> Context -> Expr -> RoseTree
-toTree cs ctx x = case x of
-  Var i       -> Node fVar  [toTreeI cs ctx i]
+toTree :: Context -> Expr -> RoseTree
+toTree ctx x = case x of
+  Var i       -> Node fVar  [toTreeI ctx i]
   Lit l       -> Node fLit  [toTreeLit l]
-  App e1 e2   -> Node fApp  [toTree cs ctx e1, toTree cs ctx e2]
-  Lam l e     -> Node fLam  [toTree cs (l:ctx) e]
+  App e1 e2   -> Node fApp  [toTree ctx e1, toTree ctx e2]
+  Lam l e     -> Node fLam  [toTree (l:ctx) e]
   Let b e2    -> let new = localsIn' b
-                  in Node fLet  [toTreeBind cs ctx b, toTree cs (new ++ ctx) e2]
-  Case e l as -> Node fCase (toTree cs ctx e : map (toTreeAlt cs (l:ctx)) as)
+                  in Node fLet  [toTreeBind ctx b, toTree (new ++ ctx) e2]
+  Case e l as -> Node fCase (toTree ctx e : map (toTreeAlt (l:ctx)) as)
   Type        -> Node fType []
 
-toTreeI :: Clusters -> Context -> Id -> RoseTree
-toTreeI cs ctx x = case x of
+toTreeI :: Context -> Id -> RoseTree
+toTreeI ctx x = case x of
   Local l       -> Node fLocal       [Node (phiL ctx l) []]
-  Global g      -> Node fGlobal      [Node (phiG cs  g) []]
+  Global g      -> Node fGlobal      [Node (phiG g) []]
   Constructor _ -> Node fConstructor []
 
 toTreeLit x = case x of
   LitNum -> Node fLitNum []
   LitStr -> Node fLitStr []
 
-toTreeAlt :: Clusters -> Context -> Alt -> RoseTree
-toTreeAlt cs ctx x = case x of
-  Alt ac e2 ls -> Node fAlt [toTreeAltCon ac, toTree cs (ls ++ ctx) e2]
+toTreeAlt :: Context -> Alt -> RoseTree
+toTreeAlt ctx x = case x of
+  Alt ac e2 ls -> Node fAlt [toTreeAltCon ac, toTree (ls ++ ctx) e2]
 
 toTreeAltCon x = case x of
   DataAlt _ -> Node fDataAlt []
   LitAlt l  -> Node fLitAlt  [toTreeLit l]
   Default   -> Node fDefault []
 
-toTreeBind :: Clusters -> Context -> Bind -> RoseTree
-toTreeBind cs ctx x = case x of
+toTreeBind :: Context -> Bind -> RoseTree
+toTreeBind ctx x = case x of
   NonRec b -> let new = localsIn [b]
-               in Node fNonRec      [toTreeBinder cs (new ++ ctx)  b]
+               in Node fNonRec      [toTreeBinder (new ++ ctx)  b]
   Rec bs   -> let new = localsIn bs
-               in Node fRec    (map (toTreeBinder cs (new ++ ctx)) bs)
+               in Node fRec    (map (toTreeBinder (new ++ ctx)) bs)
 
 -- Extend ctx in toTreeBind rather than here, to allow recursion
-toTreeBinder cs ctx x = case x of
-  Bind l e -> Node fBind [toTree cs ctx e]
+toTreeBinder ctx x = case x of
+  Bind l e -> Node fBind [toTree ctx e]
 
 -- Look up fresh variable names from buried Binds
 localsIn []            = []
@@ -56,8 +56,8 @@ phiL ctx x = case elemIndex x ctx of
   Nothing -> error (concat ["Local '", show x, "' not in context '", show ctx, "'"])
   Just i  -> Left $ (2 * alpha) + i
 
-phiG :: Clusters -> Global -> Feature
-phiG cs (G x) = Right x
+phiG :: Global -> Feature
+phiG (G x) = Right x
 
 fRecursion   = Left $ 3 * alpha
 
@@ -87,7 +87,7 @@ level :: Int -> RoseTree -> [Feature]
 level 1 (Node f _)  = [f]
 level n (Node _ ts) = concatMap (level (n-1)) ts
 
-featureVec :: Int -> Int -> Clusters -> Expr -> [Feature]
-featureVec r c cs e = concatMap (\m -> pad (level m tree)) [1..r]
-  where tree   = toTree cs [] e
+featureVec :: Int -> Int -> Expr -> [Feature]
+featureVec r c e = concatMap (\m -> pad (level m tree)) [1..r]
+  where tree   = toTree [] e
         pad xs = take c (xs ++ repeat (Left 0))

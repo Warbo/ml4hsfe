@@ -15,55 +15,50 @@ instance Arbitrary Local where
 instance Arbitrary Literal where
   arbitrary = elements [LitNum, LitStr]
 
-arbExpr 0 _ _ = oneof [Lit <$> arbitrary, pure Type]
-arbExpr n cs ctx = oneof [
-    Var <$> arbId cs ctx
+arbExpr 0 _ = oneof [Lit <$> arbitrary, pure Type]
+arbExpr n ctx = oneof [
+    Var <$> arbId ctx
   , Lit <$> arbitrary
-  , App <$> arbExpr (n `div` 2) cs ctx <*> arbExpr (n `div` 2) cs ctx
+  , App <$> arbExpr (n `div` 2) ctx <*> arbExpr (n `div` 2) ctx
   , do l <- arbitrary
-       Lam l <$> arbExpr (n-1) cs (l:ctx)
-  , do (ls, bs) <- arbBind (n `div` 2) cs ctx
-       Let bs <$> arbExpr (n `div` 2) cs (ls ++ ctx)
+       Lam l <$> arbExpr (n-1) (l:ctx)
+  , do (ls, bs) <- arbBind (n `div` 2) ctx
+       Let bs <$> arbExpr (n `div` 2) (ls ++ ctx)
   , do l <- arbitrary
-       Case <$> arbExpr (n `div` 2) cs ctx
+       Case <$> arbExpr (n `div` 2) ctx
             <*> pure l
-            <*> divideBetween (\m -> arbAlt m cs (l:ctx)) (n `div` 2)
+            <*> divideBetween (\m -> arbAlt m (l:ctx)) (n `div` 2)
   , pure Type
   ]
 
-arbId cs ctx = oneof ([Global <$> arbitrary] ++ local ++ global)
-  where local  = if null ctx then []
-                             else [Local <$> arbL ctx]
-        global = if null (concat cs) then []
-                                     else map (pure . Global) (concat cs)
+arbId ctx = oneof ([Global <$> arbitrary] ++ local)
+  where local = if null ctx then []
+                            else [Local <$> arbL ctx]
 
-arbBind :: Int -> Clusters -> Context -> Gen (Context, Bind)
-arbBind n cs ctx = oneof [
-    do (Bind l x) <- arbBinder n cs ctx
+arbBind :: Int -> Context -> Gen (Context, Bind)
+arbBind n ctx = oneof [
+    do (Bind l x) <- arbBinder n ctx
        return ([l], NonRec (Bind l x))
-  , do bs <- divideBetween (\m -> arbBinder m cs ctx) n
+  , do bs <- divideBetween (\m -> arbBinder m ctx) n
        let ls = map (\(Bind l _) -> l) bs
        return (ls, Rec bs)
   ]
 
-arbBinder :: Int -> Clusters -> Context -> Gen Binder
-arbBinder n cs ctx = Bind <$> arbitrary <*> arbExpr n cs ctx
+arbBinder :: Int -> Context -> Gen Binder
+arbBinder n ctx = Bind <$> arbitrary <*> arbExpr n ctx
 
 arbL :: Context -> Gen Local
 arbL = elements
 
-arbAlt n cs ctx = do ls <- arbitrary
-                     Alt <$> arbAC <*> arbExpr n cs (ls ++ ctx) <*> pure ls
+arbAlt n ctx = do ls <- arbitrary
+                  Alt <$> arbAC <*> arbExpr n (ls ++ ctx) <*> pure ls
 
 arbAC = oneof [DataAlt <$> arbitrary, LitAlt <$> arbitrary, pure Default]
 
-newtype ExprOf = EO (Expr, Clusters) deriving (Show)
-
-instance Arbitrary ExprOf where
-  arbitrary = do cs <- arbitrary
-                 Positive n <- arbitrary
-                 e <- arbExpr n cs []
-                 return (EO (e, cs))
+instance Arbitrary Expr where
+  arbitrary = do Positive n <- arbitrary
+                 e <- arbExpr n []
+                 return e
 
 safeId = do x <- arbitrary
             return x {

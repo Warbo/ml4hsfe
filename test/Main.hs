@@ -82,12 +82,12 @@ canExtractLevels (Positive l) f = level l (tree l) == [f]
   where tree 1 = Node f []
         tree n = Node (Left (n `mod` 3)) [tree (n-1)]
 
-canExtractFeatures (Positive r) (Positive c) (EO (e, cs)) =
-  length (featureVec c r cs e) == c * r
+canExtractFeatures (Positive r) (Positive c) e =
+  length (featureVec c r e) == c * r
 
-evalExprs (EO (e, cs)) = walkE e
+evalExprs e = walkE e
 
-exprsGetTrees ctx (EO (e, cs)) = walkTree (toTree cs ctx e)
+exprsGetTrees ctx e = walkTree (toTree ctx e)
 
 walkTree (Node x xs) = (case x of
   Left  _ -> id
@@ -131,8 +131,8 @@ walkAC a = case a of
 instance IsString PackageName where
   fromString = PackageName . mkFastString
 
-globalsIncluded (EO (x, cs)) (Positive r) (Positive c) =
-  forAll safeId (globalsIncluded' x cs r c)
+globalsIncluded x (Positive r) (Positive c) =
+  forAll safeId (globalsIncluded' x r c)
 
-globalsIncluded' x cs r c g = Str.toString (encode g) `isInfixOf` vec
-  where vec = renderVector (featureVec (r + 30) (c + 30) cs (App x (Var (Global (G g)))))
+globalsIncluded' x r c g = Str.toString (encode g) `isInfixOf` vec
+  where vec = renderVector (featureVec (r + 30) (c + 30) (App x (Var (Global (G g)))))
