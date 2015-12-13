@@ -91,8 +91,17 @@ renderVector = (++ "]") . ("[" ++) . List.intercalate "," . map showFeature
 showFeature (Left n) = show n
 showFeature (Right g) = S.toString (Aeson.encode g)
 
-process :: Int -> Int -> String -> String
-process c r rawAst = let ast = readAst rawAst
-                         Just exp = readExpr ast
-                         vec = featureVec c r exp
-                      in renderVector vec
+process :: Int -> Int -> String -> String -> [String] -> String -> String
+process c r mod pkg names rawAst =
+  let [mod', pkg'] = map sToL [mod, pkg]
+      names'       = map S.fromString names
+      ast          = readAst rawAst
+      exp          = qualifyExpr mod' pkg' names' ast
+      vec          = featureVec c r exp
+   in renderVector vec
+
+qualifyAst mod pkg names = qualifyMod mod pkg names . unwrapAst
+
+qualifyExpr mod pkg names = fromJust . readExpr . qualifyAst mod pkg names
+
+sToL = L.String . S.fromString

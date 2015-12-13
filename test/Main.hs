@@ -5,6 +5,7 @@ module Main where
 import qualified CoreSyn             as C
 import           Data.Aeson
 import qualified Data.AttoLisp       as L
+import           Data.Char
 import qualified Data.HashMap.Strict as HM
 import           Data.List
 import           Data.Maybe
@@ -37,15 +38,10 @@ main = defaultMain $ testGroup "All tests" [
   , testProperty "Can extract features"             canExtractFeatures
   , testProperty "Can force arbitrary expressions"  evalExprs
   , testProperty "Globals included"                 globalsIncluded
+  , testProperty "Qualify module locals to globals" qualifyMods
+  , testProperty "Vectors contain globals from mod" globalVecContents
+  , testProperty "Module contents are global"       globalModContents
   ]
-
-mapId f (ID x y z) = ID (f x) (f y) (f z)
-
-typesErased = isNothing (readExpr (L.String "Type"))
-
-hasType (L.String s)  = s `elem` ["Type", "TyCon", "TyConApp", "Tick",
-                                  "TyVarTy", "Cast", "Coercion"]
-hasType (L.List   zs) = any hasType zs
 
 canUnwrapAsts ast = noNest (unwrapAst ast)
   where noNest (L.List [L.List _]) = False
@@ -131,8 +127,84 @@ walkAC a = case a of
 instance IsString PackageName where
   fromString = PackageName . mkFastString
 
+qualifyMods pre post = forAll mkId check
+  where check i = g `isIn` qualifyMod m p [Str.fromString (idName i)] (L.List (pre ++ [l] ++ post))
+          where m = L.String (Str.fromString (idModule  i))
+                p = L.String (Str.fromString (idPackage i))
+                g = asGlobal i
+                l = asLocal  i
+                isIn :: L.Lisp -> L.Lisp -> Bool
+                isIn x y | x == y = True
+                isIn x (L.List xs) | x `elem` xs = True
+                isIn x (L.List xs) = any (x `isIn`) xs
+
 globalsIncluded x (Positive r) (Positive c) =
   forAll safeId (globalsIncluded' x r c)
 
 globalsIncluded' x r c g = Str.toString (encode g) `isInfixOf` vec
   where vec = renderVector (featureVec (r + 30) (c + 30) (App x (Var (Global (G g)))))
+
+globalVecContents padN (Positive n) =
+    forAll mkId checkContents
+  where checkContents i = forAll (mkLisp (n `mod` 20) (asLocal i))
+                                 globalModContents'
+          where globalModContents' l =
+                    counterexample (show ("vec",   vec,
+                                          "names", names,
+                                          "expr",  expr)) $
+                      Right i `elem` vec
+                  where names = fst padN ++ [idName i] ++ snd padN
+                        expr  = qualifyExpr (sToL (idModule  i))
+                                            (sToL (idPackage i))
+                                            (map Str.fromString names)
+                                            l
+                        vec   = featureVec 30 30 expr
+
+globalModContents padN (Positive n) =
+    forAll mkId checkContents
+  where checkContents i = forAll (mkLisp (n `mod` 20) (asLocal i))
+                                 globalModContents'
+
+          where globalModContents' l = counterexample vec $
+                                         Str.toString (encode i) `isInfixOf` vec
+                  where names = fst padN ++ [idName i] ++ snd padN
+                        vec   = process 30
+                                        30
+                                        (idModule  i)
+                                        (idPackage i)
+                                        names
+                                        (Str.toString (L.encode l))
+
+mkLisp :: Int -> L.Lisp -> Gen L.Lisp
+mkLisp n l = case n of
+  0 -> pure l
+  _ | n `mod` 3 == 0 -> do x <- arbitrary `suchThat` validLocal
+                           mkLisp (n-1) (L.List ["Lam", L.List ["Var", L.List ["name", x]], l])
+  _ | n `mod` 5 == 0 -> do x <- arbitrary
+                           mkLisp (n-1) (L.List ["App", l, L.List ["Lit", L.List ["MachStr", x]]])
+  _                  -> do x <- arbitrary `suchThat` validLocal
+                           mkLisp (n-1) (L.List ["App", L.List ["Lam", L.List ["Var", L.List ["name", x]],
+                                                                       L.List ["Var", L.List ["name", x]]],
+                                                        l])
+
+validLocal (L.String x) = validText x
+validLocal _ = False
+
+validText = validName . Str.toString
+
+validName s = length s > 0 && all isPrint s && all isAscii s && all isAlphaNum s
+
+validId i = validName (idName i) && validName (idPackage i) && validName (idModule i)
+
+validVar x = validName x && not (isCons x)
+
+mkId = do n <- arbitrary `suchThat` validVar
+          m <- arbitrary `suchThat` validName
+          p <- arbitrary `suchThat` validName
+          return (ID { idName = n, idModule = m, idPackage = p})
+
+asLocal i = L.List ["Var", L.List ["name", L.String (Str.fromString (idName i))]]
+
+asGlobal i = L.List ["Var", L.List [L.List ["name", sToL (idName    i)],
+                                    L.List ["mod",  sToL (idModule  i)],
+                                    L.List ["pkg",  sToL (idPackage i)]]]

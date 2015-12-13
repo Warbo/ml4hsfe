@@ -1,6 +1,7 @@
 module ML4HSFE.FeatureExtraction where
 
 import Data.List
+import HS2AST.Types hiding (Node)
 import ML4HSFE.Types
 
 toTree :: Context -> Expr -> RoseTree
@@ -91,3 +92,20 @@ featureVec :: Int -> Int -> Expr -> [Feature]
 featureVec r c e = concatMap (\m -> pad (level m tree)) [1..r]
   where tree   = toTree [] e
         pad xs = take c (xs ++ repeat (Left 0))
+
+fixUpE mod pkg names x = recurse x
+  where recurse e = case e of
+          Var (Local (L n)) | n `elem` names -> Var (Global (G (ID {
+                                                  idName    = n,
+                                                  idPackage = pkg,
+                                                  idModule  = mod })))
+          App a b     -> App (recurse a) (recurse b)
+          Lam a b     -> Lam a (recurse b)
+          Let a b     -> Let (fixUpB mod pkg names a) (recurse b)
+          Case a b cs -> Case (recurse a) b (map (fixUpA mod pkg names) cs)
+          _           -> e
+
+fixUpB mod pkg names (NonRec (Bind a b)) = NonRec (Bind a (fixUpE mod pkg names b))
+fixUpB mod pkg names (Rec xs) = Rec (map (\(Bind a b) -> Bind a (fixUpE mod pkg names b)) xs)
+
+fixUpA mod pkg names (Alt a b cs) = Alt a (fixUpE mod pkg names b) cs

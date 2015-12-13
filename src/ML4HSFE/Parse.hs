@@ -26,6 +26,12 @@ asPair x = errorWithStackTrace ("Not unwrapping pair " ++ show x)
 asTriple (L.List ["(,,)", x, y, z]) = Just (x, y, z)
 asTriple x = errorWithStackTrace ("Not unwrapping triple " ++ show x)
 
+qualifyMod mod pkg names x = case x of
+  L.List ["Var", L.List ["name", L.String n]] | n `elem` names ->
+    L.List ["Var", L.List [L.List ["name", L.String n], L.List ["mod", mod], L.List ["pkg", pkg]]]
+  L.List xs -> L.List (map (qualifyMod mod pkg names) xs)
+  _ -> x
+
 readExpr :: AST -> Maybe Expr
 readExpr = readExpr' . unwrapAst
 
