@@ -31,7 +31,7 @@ arbExpr n ctx = oneof [
   , pure Type
   ]
 
-arbId ctx = oneof ([Global <$> arbitrary] ++ local)
+arbId ctx = oneof ((Global <$> arbitrary) : local)
   where local = if null ctx then []
                             else [Local <$> arbL ctx]
 
@@ -39,7 +39,7 @@ arbBind :: Int -> Context -> Gen (Context, Bind)
 arbBind n ctx = oneof [
     do (Bind l x) <- arbBinder n ctx
        return ([l], NonRec (Bind l x))
-  , do bs <- divideBetween (\m -> arbBinder m ctx) n
+  , do bs <- divideBetween (`arbBinder` ctx) n
        let ls = map (\(Bind l _) -> l) bs
        return (ls, Rec bs)
   ]
@@ -57,8 +57,7 @@ arbAC = oneof [DataAlt <$> arbitrary, LitAlt <$> arbitrary, pure Default]
 
 instance Arbitrary Expr where
   arbitrary = do Positive n <- arbitrary
-                 e <- arbExpr n []
-                 return e
+                 arbExpr n []
 
 safeId = do x <- arbitrary
             return x {

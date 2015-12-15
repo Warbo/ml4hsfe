@@ -45,7 +45,7 @@ readExpr' ast = case ast of
   L.List ["Case", x, l, _, as] -> do x'   <- readExpr  x
                                      l'   <- readLocal l
                                      as'  <- asList as
-                                     as'' <- sequence (map readAlt as')
+                                     as'' <- mapM readAlt as'
                                      return (Case x' l' as'')
   L.List ["Type", _]           -> Just Type
   "Type"                       -> Just Type
@@ -71,11 +71,11 @@ readId x = case x of
           L.List ["mod",  L.String m],
           L.List ["pkg",  L.String p]] -> if isCons (S.toString n)
                                              then Just (Constructor ())
-                                             else Just (Global (G (ID {
+                                             else Just (Global (G ID {
                                                  idPackage = S.toString p,
                                                  idModule  = S.toString m,
                                                  idName    = S.toString n
-                                               })))
+                                               }))
   _ -> errorWithStackTrace ("Unexpected argument to readId " ++ show x)
 
 -- | Check if a name is that of a constructor
@@ -88,7 +88,7 @@ readAlt x = do (con, vars, e) <- asTriple x
                con'   <- readAltCon con
                e'     <- readExpr e
                vars'  <- asList vars
-               vars'' <- sequence (map readLocal vars')
+               vars'' <- mapM readLocal vars'
                return (Alt con' e' vars'')
 
 readAltCon (L.List ["DataAlt", _]) = Just (DataAlt ())
@@ -98,7 +98,7 @@ readAltCon x = errorWithStackTrace ("Unexpected AltCon " ++ show x)
 
 readBind b = case b of
   L.List ["Rec", bs]      -> do bs' <- asList bs
-                                bs'' <- sequence (map readBinder bs')
+                                bs'' <- mapM readBinder bs'
                                 return (Rec bs'')
   L.List ["NonRec", l, e] -> NonRec <$> (Bind <$> readLocal l <*> readExpr e)
   _ -> errorWithStackTrace ("Unexpected argument to readBind " ++ show b)

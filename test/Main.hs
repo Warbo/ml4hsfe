@@ -81,7 +81,7 @@ canExtractLevels (Positive l) f = level l (tree l) == [f]
 canExtractFeatures (Positive r) (Positive c) e =
   length (featureVec c r e) == c * r
 
-evalExprs e = walkE e
+evalExprs = walkE
 
 exprsGetTrees ctx e = walkTree (toTree ctx e)
 
@@ -105,7 +105,7 @@ walkI i = case i of
 
 walkC () = True
 
-walkL (L x) = length x >= 0
+walkL (L !x) = True
 
 walkB (NonRec x)  = walkBinder x
 walkB (Rec    xs) = all walkBinder xs
@@ -192,7 +192,7 @@ validLocal _ = False
 
 validText = validName . Str.toString
 
-validName s = length s > 0 && all isPrint s && all isAscii s && all isAlphaNum s
+validName s = not (null s) && all isPrint s && all isAscii s && all isAlphaNum s
 
 validId i = validName (idName i) && validName (idPackage i) && validName (idModule i)
 
@@ -201,7 +201,7 @@ validVar x = validName x && not (isCons x)
 mkId = do n <- arbitrary `suchThat` validVar
           m <- arbitrary `suchThat` validName
           p <- arbitrary `suchThat` validName
-          return (ID { idName = n, idModule = m, idPackage = p})
+          return ID { idName = n, idModule = m, idPackage = p}
 
 asLocal i = L.List ["Var", L.List ["name", L.String (Str.fromString (idName i))]]
 

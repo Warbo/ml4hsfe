@@ -93,12 +93,12 @@ featureVec r c e = concatMap (\m -> pad (level m tree)) [1..r]
   where tree   = toTree [] e
         pad xs = take c (xs ++ repeat (Left 0))
 
-fixUpE mod pkg names x = recurse x
+fixUpE mod pkg names = recurse
   where recurse e = case e of
-          Var (Local (L n)) | n `elem` names -> Var (Global (G (ID {
+          Var (Local (L n)) | n `elem` names -> Var (Global (G ID {
                                                   idName    = n,
                                                   idPackage = pkg,
-                                                  idModule  = mod })))
+                                                  idModule  = mod }))
           App a b     -> App (recurse a) (recurse b)
           Lam a b     -> Lam a (recurse b)
           Let a b     -> Let (fixUpB mod pkg names a) (recurse b)
