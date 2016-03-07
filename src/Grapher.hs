@@ -44,19 +44,15 @@ parse s = case eitherDecode s of
                Left err -> error err
                Right ps -> ps
 
+-- Includes as many Atoms as possible in each group
 group :: [ASTId] -> [SCC Atom]
-group ids = stronglyConnComp atoms
-  where atoms = map extractGraphable ids
+group = bigSCCs . map extractGraphable
 
 group' :: [(Atom, Atom, [Atom])] -> [SCC (Atom, Atom, [Atom])]
 group' = stronglyConnCompR
 
 ungroup' :: [SCC (Atom, Atom, [Atom])] -> [(Atom, Atom, [Atom])]
 ungroup' = flattenSCCs
-
--- Like group, but includes as many Atoms as possible in each group
-bigGroup :: [ASTId] -> [SCC Atom]
-bigGroup = bigSCCs . map extractGraphable
 
 leaves :: [ASTId] -> [ASTId]
 leaves = filter (null . aDeps)
