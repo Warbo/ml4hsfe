@@ -39,7 +39,7 @@ unString' = S.toString . unString
 
 handleOne :: Int -> Int -> A.Array -> A.Object -> A.Object
 handleOne w h xs x = HM.insert "features" (A.Array features) x
-  where features = ml4hsfe w h (unString' mod) (unString' pkg) names' (S.toString (A.encode ast))
+  where features = ml4hsfe w h (unString' mod) (unString' pkg) names' (unString' ast)
         Just ast = HM.lookup "ast"     x
         Just mod = HM.lookup "module"  x
         Just pkg = HM.lookup "package" x
