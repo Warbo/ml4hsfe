@@ -48,15 +48,6 @@ parse s = case eitherDecode s of
 group :: [ASTId] -> [SCC Atom]
 group = bigSCCs . map extractGraphable
 
-group' :: [(Atom, Atom, [Atom])] -> [SCC (Atom, Atom, [Atom])]
-group' = stronglyConnCompR
-
-ungroup' :: [SCC (Atom, Atom, [Atom])] -> [(Atom, Atom, [Atom])]
-ungroup' = flattenSCCs
-
-leaves :: [ASTId] -> [ASTId]
-leaves = filter (null . aDeps)
-
 bigSCCs :: [(Atom, Atom, [Atom])] -> [SCC Atom]
 bigSCCs as = case nextSCC as of
   Nothing -> []
@@ -79,7 +70,7 @@ depLess = filter (null . sccDeps)
 nextSCC :: [(Atom, Atom, [Atom])] -> Maybe (SCC Atom)
 nextSCC [] = Nothing
 nextSCC as = forgetAtoms <$> combineSCCs sccs
-  where sccs = depLess (group' as)
+  where sccs = depLess (stronglyConnCompR (stripUnknownDeps as))
 
 combineSCCs :: [SCC a] -> Maybe (SCC a)
 combineSCCs ss = case ss of
