@@ -54,7 +54,7 @@ localsIn' (Rec    bs) = localsIn bs
 
 phiL :: Context -> Local -> Feature
 phiL ctx x = case elemIndex x ctx of
-  Nothing -> error (concat ["Local '", show x, "' not in context '", show ctx, "'"])
+  Nothing -> fRecursion  -- This is usually an implicit dictionary
   Just i  -> Left $ (2 * alpha) + i
 
 phiG :: Global -> Feature
