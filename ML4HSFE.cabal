@@ -28,12 +28,14 @@ library
                      , vector
                      , scientific
                      , QuickCheck
+                     , process
   exposed-modules:     ML4HSFE
                      , ML4HSFE.Parse
                      , ML4HSFE.FeatureExtraction
                      , ML4HSFE.Types
                      , ML4HSFE.Generators
                      , ML4HSFE.Loop
+                     , ML4HSFE.Outer
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -54,7 +56,16 @@ executable ml4hsfe-loop
                      , ML4HSFE
   hs-source-dirs:      ml4hsfe-loop
   default-language:    Haskell2010
-  
+
+executable ml4hsfe-outer-loop
+  main-is:             Main.hs
+  -- other-modules:       
+  -- other-extensions:    
+  build-depends:       base >=4.8 && <4.9
+                     , ML4HSFE
+  hs-source-dirs:      ml4hsfe-outer-loop
+  default-language:    Haskell2010
+    
 test-suite test
   default-language:    Haskell2010
   type:                exitcode-stdio-1.0
