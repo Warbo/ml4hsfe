@@ -29,6 +29,7 @@ library
                      , scientific
                      , QuickCheck
                      , process
+                     , hashable
   exposed-modules:     ML4HSFE
                      , ML4HSFE.Parse
                      , ML4HSFE.FeatureExtraction

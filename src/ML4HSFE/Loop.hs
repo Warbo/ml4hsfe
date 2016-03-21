@@ -17,9 +17,8 @@ ml4hsfe w h mod pkg names rawAst = V.fromList (map featureToVal (processVal w h 
 
 featureToVal :: Feature -> A.Value
 featureToVal (Left  i)  = A.Number (fromInteger . toInteger $ i)
-featureToVal (Right id) = case A.decode (A.encode id) of
-  Nothing -> error "Failed to convert ID to JSON value"
-  Just x  -> x
+featureToVal (Right id) = fromMaybe (error "Failed to convert ID to JSON value")
+                                    (A.decode (A.encode id))
 
 handle w h x = case getAll x of
   Nothing  -> error "Failed to parse array of ASTs"
