@@ -4,9 +4,10 @@ module ML4HSFE.Loop where
 -- Top-level loop for processing ASTs. We use Haskell since jq+bash is slow.
 
 import qualified Data.Aeson          as A
-import qualified Data.Vector         as V
 import qualified Data.HashMap.Strict as HM
+import           Data.Maybe
 import qualified Data.Stringable     as S
+import qualified Data.Vector         as V
 import           ML4HSFE
 import           ML4HSFE.Types
 
