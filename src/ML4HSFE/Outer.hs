@@ -114,10 +114,10 @@ setClusterFrom (Object ast) clusters = Object $ case go of
           (n, m, p) <- getNMP ast
           HM.lookup (N n, M m, P p) clusters
 
-getNMP = do String n <- HM.lookup "name"    ast
-            String m <- HM.lookup "module"  ast
-            String p <- HM.lookup "package" ast
-            return (n, m, p)
+getNMP x = do String n <- HM.lookup "name"    x
+              String m <- HM.lookup "module"  x
+              String p <- HM.lookup "package" x
+              return (n, m, p)
 
 setFeaturesFrom :: Prop ClusterID -> Value -> Value
 setFeaturesFrom clusters (Object ast) =
@@ -133,7 +133,7 @@ setFVFrom clusters (Object f) = Number . (300 +) $ case new of
                                                     Nothing    -> 0
                                                     Just (C n) -> n
   where new = do
-          (n, m, p) <- getNMP
+          (n, m, p) <- getNMP f
           HM.lookup (N n, M m, P p) clusters
 
 findAst :: ASTs -> Name -> Module -> Package -> _ -> Maybe Value
