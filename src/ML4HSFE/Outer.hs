@@ -12,6 +12,7 @@ import qualified Data.Stringable as S
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import GHC.Generics (Generic)
+import System.Environment
 import System.Process
 
 type ASTs   = Array
@@ -95,9 +96,17 @@ idOf x = fromJust $ do
   (n, m, p) <- getNMP x
   return (N n, M m, P p)
 
+runWekaCmd :: IO String
+runWekaCmd = do
+  cmd <- lookupEnv "RUN_WEKA_CMD"
+  case cmd of
+    Just c  -> return c
+    Nothing -> return "runWeka"
+
 runWeka :: ASTs -> IO (Prop ClusterID)
 runWeka asts = do
-    stdout <- readProcess "runWeka" [] stdin
+    cmd    <- runWekaCmd
+    stdout <- readProcess cmd [] stdin
     return (toClusters (parse stdout))
   where stdin = S.toString (encode asts)
         parse         = fromRight . eitherDecode' . S.fromString
