@@ -28,7 +28,6 @@ import           Test.QuickCheck
 import           Test.Tasty             (defaultMain, testGroup, localOption)
 import           Test.Tasty.QuickCheck
 
-
 tests = testGroup "Feature extraction tests" [
     testProperty "Syntax is expected"               syntaxMatches
   , testProperty "Unwrap ASTs"                      canUnwrapAsts
