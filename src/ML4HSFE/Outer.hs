@@ -1,19 +1,21 @@
 {-# LANGUAGE PartialTypeSignatures, OverloadedStrings, DeriveGeneric #-}
 module ML4HSFE.Outer where
 
-import Control.Monad
-import Data.Aeson
-import Data.Aeson.Types
-import Data.Hashable
-import qualified Data.HashMap.Strict as HM
-import Data.Maybe
-import qualified Data.Scientific as Sci
-import qualified Data.Stringable as S
-import qualified Data.Text as T
-import qualified Data.Vector as V
-import GHC.Generics (Generic)
-import System.Environment
-import System.Process
+import           Control.Monad
+import           Data.Aeson
+import           Data.Aeson.Types
+import           Data.Hashable
+import qualified Data.HashMap.Strict    as HM
+import           Data.Maybe
+import qualified Data.Scientific        as Sci
+import qualified Data.Stringable        as S
+import qualified Data.Text              as T
+import qualified Data.Vector            as V
+import           GHC.Generics (Generic)
+import qualified Grapher                as OD -- From order-deps
+import           System.Environment
+import           System.IO.Unsafe
+import           System.Process
 
 type ASTs   = Array
 type SCC    = Array
@@ -33,9 +35,9 @@ fromRight (Right x) = x
 fromRight (Left  e) = error e
 
 clusterLoop :: String -> IO ASTs
-clusterLoop s = do sccsStr <- order (S.toString s)
-                   clusterSCCs asts (fromRight (eitherDecode' (S.fromString sccsStr)))
-  where asts = fromRight (eitherDecode' (S.fromString s))
+clusterLoop s = clusterSCCs asts (fromRight (eitherDecode' (S.fromString sccsStr)))
+  where asts    = fromRight (eitherDecode' (S.fromString s))
+        sccsStr = order (S.toString s)
 
 clusterSCCs :: ASTs -> [SCC] -> IO ASTs
 clusterSCCs asts []         = return asts
@@ -65,8 +67,8 @@ enableMatching (N name) (M mod) (P pkg) x' = fromRight . (`parseEither` x') $ wi
                       then HM.insert "tocluster" (Bool True) x
                       else x
 
-order :: String -> IO String
-order = readProcess "order-deps" []
+order :: String -> String
+order = S.toString . OD.process . OD.parse . S.fromString
 
 renderAsts :: ASTs -> String
 renderAsts = S.toString . encode
@@ -96,8 +98,8 @@ idOf x = fromJust $ do
   (n, m, p) <- getNMP x
   return (N n, M m, P p)
 
-runWekaCmd :: IO String
-runWekaCmd = do
+runWekaCmd :: String
+runWekaCmd = unsafePerformIO $ do
   cmd <- lookupEnv "RUN_WEKA_CMD"
   case cmd of
     Just c  -> return c
@@ -105,8 +107,7 @@ runWekaCmd = do
 
 runWeka :: ASTs -> IO (Prop ClusterID)
 runWeka asts = do
-    cmd    <- runWekaCmd
-    stdout <- readProcess cmd [] stdin
+    stdout <- readProcess runWekaCmd [] stdin
     return (toClusters (parse stdout))
   where stdin = S.toString (encode asts)
         parse         = fromRight . eitherDecode' . S.fromString

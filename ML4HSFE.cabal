@@ -30,6 +30,7 @@ library
                      , QuickCheck
                      , process
                      , hashable
+                     , order-deps
   exposed-modules:     ML4HSFE
                      , ML4HSFE.Parse
                      , ML4HSFE.FeatureExtraction
