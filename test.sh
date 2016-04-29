@@ -105,4 +105,11 @@ do
         msg "Aborting due to mismatch"
         exit 1
     fi
+
+    msg "Ensuring Haskell results contain clusters"
+    RESULT=$(echo "$HASKELL_RESULT" | jq 'map(has("cluster")) | all')
+    [[ "x$RESULT" = "xtrue" ]] || {
+        msg "Haskell results missing clusters"
+        exit 1
+    }
 done
