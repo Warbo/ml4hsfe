@@ -12,7 +12,7 @@ cabal test || fail "Tests failed"
 
 for EX in examples/ml4hsfe-loop-example-input*.json
 do
-    WIDTH=10 HEIGHT=10 cabal run ml4hsfe-loop < "$EX" > /dev/null ||
+    WIDTH=10 HEIGHT=10 cabal run -v0 ml4hsfe-loop < "$EX" > /dev/null ||
         fail "Failed sending '$EX' through ml4hsfe-loop"
 done
 
@@ -20,6 +20,11 @@ done
 
 function msg {
   echo -e "$1" 1>&2
+}
+
+function compareResults {
+    jq -n --slurpfile a "$1" --slurpfile b "$2" \
+       '$a[0] | map((. + {"cluster":null}) as $elem | $b[0] | map((select((. + {"cluster":null}) == $elem))) | length | . == 1)'
 }
 
 function bashCluster {
@@ -66,14 +71,18 @@ for EX in examples/ml4hsfe-outer-loop-example-input*.json
 do
     export WIDTH=10
     export HEIGHT=10
-    HASKELL_RESULT=$(cabal run ml4hsfe-outer-loop < "$EX") ||
+    HASKELL_RESULT=$(cabal run -v0 ml4hsfe-outer-loop < "$EX") ||
         fail "Failed sending '$EX' through ml4hsfe-outer-loop"
-    BASH_RESULT=$(cabal run ml4hsfe-loop < "$EX" | bashCluster)
+    BASH_RESULT=$(cabal run -v0 ml4hsfe-loop < "$EX" | bashCluster)
+
+    msg "HASKELL_RESULT"
+    msg "$HASKELL_RESULT"
+
+    msg "BASH_RESULT"
+    msg "$BASH_RESULT"
 
     msg "Checking Haskell results appear in Bash results"
-    CHECK1=$(jq -n --slurpfile haskell <(echo "$HASKELL_RESULT") \
-                   --slurpfile bash    <(echo "$BASH_RESULT")    \
-                   '$haskell | map((. + {"cluster":null}) as $elem | $bash | map((select((. + {"cluster":null}) == $elem))) | length | . == 1)')
+    CHECK1=$(compareResults <(echo "$HASKELL_RESULT") <(echo "$BASH_RESULT"))
 
     FAIL=0
     if [[ "x$CHECK1" = "xfalse" ]]
@@ -83,9 +92,7 @@ do
     fi
 
     msg "Checking Bash results appear in Haskell results"
-    CHECK2=$(jq -n --slurpfile haskell <(echo "$HASKELL_RESULT") \
-                   --slurpfile bash    <(echo "$BASH_RESULT")    \
-                   '$bash | map((. + {"cluster":null}) as $elem | $haskell | map((select((. + {"cluster":null}) == $elem))) | length | . == 1)')
+    CHECK2=$(compareResults <(echo "$BASH_RESULT") <(echo "$HASKELL_RESULT"))
 
     if [[ "x$CHECK2" = "xfalse" ]]
     then
