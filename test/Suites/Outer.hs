@@ -10,14 +10,18 @@ import           ML4HSFE.Outer
 import           ML4HSFE.Loop
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
+import           System.Exit
+import           System.Process
 import           Test.Tasty             (defaultMain, testGroup, localOption)
 import           Test.Tasty.QuickCheck
 
-tests = testGroup "Outer loop tests" [
-    testProperty "Loop contains objects" arrayOfObjects
-  , testProperty "Objects have clusters" objectsHaveClusters
-  , testProperty "Clusters are numbers"  clustersAreNumbers
-  ]
+tests = testGroup "Outer loop tests" $ if haveRunWeka
+  then [
+      testProperty "Loop contains objects" arrayOfObjects
+    , testProperty "Objects have clusters" objectsHaveClusters
+    , testProperty "Clusters are numbers"  clustersAreNumbers
+    ]
+  else []
 
 arrayOfObjects = all isOb (V.toList clustered)
   where isOb (Object _) = True
@@ -33,6 +37,7 @@ clustersAreNumbers = all clusterIsNum (V.toList clustered)
           x               -> error (show (("Expected", "Just (Number _)"),
                                           ("Got",      x)))
 
+{-# NOINLINE clustered #-}
 clustered :: ASTs
 clustered = unsafePerformIO $ do
     asts <- rawAsts
@@ -42,3 +47,11 @@ clustered = unsafePerformIO $ do
 
 rawAsts :: IO String
 rawAsts = readFile "examples/ml4hsfe-outer-loop-example-input.json"
+
+{-# NOINLINE haveRunWeka #-}
+haveRunWeka :: Bool
+haveRunWeka = unsafePerformIO $ haveCommand "runWeka"
+
+haveCommand c = do
+  (c, _, _) <- readCreateProcessWithExitCode (shell ("hash " ++ c)) ""
+  return (c == ExitSuccess)

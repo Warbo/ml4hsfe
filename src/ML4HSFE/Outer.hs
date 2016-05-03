@@ -98,6 +98,7 @@ idOf x = fromJust $ do
   (n, m, p) <- getNMP x
   return (N n, M m, P p)
 
+{-# NOINLINE runWekaCmd #-}
 runWekaCmd :: String
 runWekaCmd = unsafePerformIO $ do
   cmd <- lookupEnv "RUN_WEKA_CMD"

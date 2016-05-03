@@ -75,12 +75,6 @@ do
         fail "Failed sending '$EX' through ml4hsfe-outer-loop"
     BASH_RESULT=$(cabal run -v0 ml4hsfe-loop < "$EX" | bashCluster)
 
-    msg "HASKELL_RESULT"
-    msg "$HASKELL_RESULT"
-
-    msg "BASH_RESULT"
-    msg "$BASH_RESULT"
-
     msg "Checking Haskell results appear in Bash results"
     CHECK1=$(compareResults <(echo "$HASKELL_RESULT") <(echo "$BASH_RESULT"))
 
