@@ -23,17 +23,19 @@ function msg {
 }
 
 function compareResults {
+    # shellcheck disable=SC2016
     jq -n --slurpfile a "$1" --slurpfile b "$2" \
        '$a[0] | map((. + {"cluster":null}) as $elem | $b[0] | map((select((. + {"cluster":null}) == $elem))) | length | . == 1)'
 }
 
 function bashCluster {
-  BASE=$(dirname "$0")
   DEPS=$(cat)
 
   while read -r SCC
   do
     msg "Next SCC"
+
+    # shellcheck disable=SC2016
     DEPS=$(echo "$DEPS" | jq --slurpfile scc <(echo "$SCC") \
              'map(. as $elem | if ($scc[0] | map(.name == $elem.name and .module == $elem.module and .package == $elem.package) | any) then . + {"tocluster":true} else . end)')
 
