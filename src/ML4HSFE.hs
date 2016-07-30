@@ -53,7 +53,8 @@ countLeaves (L.List xs)  = sum (map countLeaves xs)
 
 readAst :: String -> AST
 readAst s = case AB.eitherResult (AB.parse L.lisp (S.fromString s)) of
-                 Left err -> error ("Couldn't read AST: " ++ show err)
+                 Left err -> error (concat ["Couldn't read AST: ", show err,
+                                            "\n", s])
                  Right x  -> x
 
 dEFAULT = Left 0

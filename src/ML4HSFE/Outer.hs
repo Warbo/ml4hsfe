@@ -39,6 +39,11 @@ clusterLoop s = clusterSCCs asts (fromRight (eitherDecode' (S.fromString sccsStr
   where asts    = fromRight (eitherDecode' (S.fromString s))
         sccsStr = order (S.toString s)
 
+clusterLoopT :: _ -> IO ASTs
+clusterLoopT s = clusterSCCs asts (fromRight (eitherDecode' sccsStr))
+  where asts    = fromRight (eitherDecode' s)
+        sccsStr = orderT s
+
 clusterSCCs :: ASTs -> [SCC] -> IO ASTs
 clusterSCCs asts []         = return asts
 clusterSCCs asts (scc:sccs) = do c <- regularCluster (en scc)
@@ -69,6 +74,8 @@ enableMatching (N name) (M mod) (P pkg) x' = fromRight . (`parseEither` x') $ wi
 
 order :: String -> String
 order = S.toString . OD.process . OD.parse . S.fromString
+
+orderT = OD.process . OD.parse
 
 renderAsts :: ASTs -> String
 renderAsts = S.toString . encode
