@@ -4,15 +4,17 @@ module ML4HSFE.Outer where
 import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Types
+import qualified Data.ByteString.Lazy.Char8 as BS
 import           Data.Hashable
-import qualified Data.HashMap.Strict    as HM
+import qualified Data.HashMap.Strict        as HM
 import           Data.Maybe
-import qualified Data.Scientific        as Sci
-import qualified Data.Stringable        as S
-import qualified Data.Text              as T
-import qualified Data.Vector            as V
+import qualified Data.Scientific            as Sci
+import qualified Data.Stringable            as S
+import qualified Data.Text                  as T
+import qualified Data.Vector                as V
 import           GHC.Generics (Generic)
-import qualified Grapher                as OD -- From order-deps
+import qualified Grapher                    as OD -- From order-deps
+import qualified HS2AST.Types               as H
 import           System.Environment
 import           System.IO.Unsafe
 import           System.Process
@@ -40,15 +42,21 @@ clusterLoop s = clusterSCCs asts (fromRight (eitherDecode' (S.fromString sccsStr
         sccsStr = order (S.toString s)
 
 clusterLoopT :: _ -> IO ASTs
-clusterLoopT s = clusterSCCs asts (fromRight (eitherDecode' sccsStr))
-  where asts    = fromRight (eitherDecode' s)
-        sccsStr = orderT s
+clusterLoopT s = clusterSCCsT asts sccs
+  where asts = fromRight (eitherDecode' s)
+        sccs = map OD.toIds . OD.group . fromRight . eitherDecode' $ s
 
 clusterSCCs :: ASTs -> [SCC] -> IO ASTs
 clusterSCCs asts []         = return asts
 clusterSCCs asts (scc:sccs) = do c <- regularCluster (en scc)
                                  clusterSCCs c sccs
   where en = enableScc asts
+
+clusterSCCsT :: ASTs -> [_] -> IO ASTs
+clusterSCCsT asts []         = return asts
+clusterSCCsT asts (scc:sccs) = do c <- regularCluster (en scc)
+                                  clusterSCCsT c sccs
+  where en = enableSccT asts
 
 enableScc :: ASTs -> SCC -> ASTs
 enableScc asts s' =
@@ -62,6 +70,21 @@ enableScc asts s' =
           pkg  <- s .: "package"
           return (enableScc (V.map (enableMatching (N name) (M mod) (P pkg)) asts) ss)
 
+enableSccT :: ASTs -> _ -> ASTs
+enableSccT asts s' =
+    if null s'
+       then asts
+       else enable (tail s') (head s')
+  where enable ss s =
+          let [name, mod, pkg] = map T.pack [H.idName    s,
+                                             H.idModule  s,
+                                             H.idPackage s]
+           in enableSccT (V.map (enableMatching (N name)
+                                                (M mod)
+                                                (P pkg))
+                                asts)
+                         ss
+
 enableMatching :: Name -> Module -> Package -> _ -> _
 enableMatching (N name) (M mod) (P pkg) x' = fromRight . (`parseEither` x') $ withObject "Need object for AST" go
   where go x = do
@@ -74,8 +97,6 @@ enableMatching (N name) (M mod) (P pkg) x' = fromRight . (`parseEither` x') $ wi
 
 order :: String -> String
 order = S.toString . OD.process . OD.parse . S.fromString
-
-orderT = OD.process . OD.parse
 
 renderAsts :: ASTs -> String
 renderAsts = S.toString . encode
