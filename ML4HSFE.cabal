@@ -92,14 +92,29 @@ test-suite test
                      , tasty >= 0.7
                      , tasty-quickcheck
 
-benchmark benchmarks
+benchmark time
   type:             exitcode-stdio-1.0
   hs-source-dirs:   benchmarks
-  main-is:          Main.hs
+  main-is:          Time.hs
   build-depends:    aeson
                   , base
                   , bytestring
                   , criterion
+                  , deepseq
+                  , ML4HSFE
+                  , scientific
+                  , text
+                  , unordered-containers
+                  , vector
+
+benchmark memory
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   benchmarks
+  main-is:          Memory.hs
+  build-depends:    aeson
+                  , base
+                  , bytestring
+                  , weigh
                   , deepseq
                   , ML4HSFE
                   , scientific
