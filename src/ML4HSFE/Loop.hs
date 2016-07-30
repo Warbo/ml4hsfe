@@ -24,13 +24,10 @@ featureToVal (Right id) = fromMaybe (error "Failed to convert ID to JSON value")
 
 handle w h x = case getAll x of
   Nothing  -> error "Failed to parse array of ASTs"
-  Just all -> V.map (handleOne w h all . unObject) all
+  Just all -> V.map (A.Object . handleOne w h all . unObject) all
 
 handleString :: Int -> Int -> String -> String
 handleString w h x = S.toString (A.encode (handle w h (S.fromString x)))
-
-handleBS :: Int -> Int -> BS.ByteString -> BS.ByteString
-handleBS w h x = A.encode (handle w h x)
 
 unObject (A.Object o) = o
 unObject _ = error "Was expecting an object"

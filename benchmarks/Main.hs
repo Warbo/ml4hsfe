@@ -13,7 +13,7 @@ import           GHC.Generics (Generic)
 import           ML4HSFE.Loop
 import           ML4HSFE.Outer
 
-maxN = 2
+maxN = 10
 
 asts = encode (map mkAst [1..maxN])
 
@@ -40,17 +40,20 @@ asStr = String . T.pack . show
 asNum :: Int -> Value
 asNum = Number . fromInteger . toInteger
 
-clusterParse = clusterLoop . handleString 10 10
+together  = clusterLoop  . handleString 10 10
+togetherT = clusterLoopT . handle       10 10
 
 -- Our benchmark harness.
 main = defaultMain [
       bgroup "Stringy" [
           bench "handleString" (nf   (handleString 10 10) (BS.unpack asts))
         , bench "clusterLoop"  (nfIO (clusterLoop         (BS.unpack asts)))
+        , bench "together"     (nfIO (together            (BS.unpack asts)))
         ]
     , bgroup "Texty" [
-          bench "handleBS"     (nf   (handleBS 10 10) asts)
-        , bench "clusterLoopT" (nfIO (clusterLoopT      asts))
+          bench "handle"       (nf   (handle       10 10)            asts)
+        , bench "clusterLoopT" (nfIO (clusterLoopT     (handle 10 10 asts)))
+        , bench "together"     (nfIO (togetherT                      asts))
         ]
   ]
 

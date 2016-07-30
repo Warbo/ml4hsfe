@@ -43,8 +43,11 @@ clusterLoop s = clusterSCCs asts (fromRight (eitherDecode' (S.fromString sccsStr
 
 clusterLoopT :: _ -> IO ASTs
 clusterLoopT s = clusterSCCsT asts sccs
-  where asts = fromRight (eitherDecode' s)
-        sccs = map OD.toIds . OD.group . fromRight . eitherDecode' $ s
+  where asts = s
+        sccs = map OD.toIds .
+               OD.group     .
+               V.toList     .
+               V.map (fromRight . parseEither parseJSON) $ s
 
 clusterSCCs :: ASTs -> [SCC] -> IO ASTs
 clusterSCCs asts []         = return asts
