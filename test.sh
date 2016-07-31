@@ -1,8 +1,12 @@
 #! /usr/bin/env nix-shell
-#! nix-shell --show-trace -i bash -p jq runWeka order-deps
+#! nix-shell --show-trace -i bash -p jq runWeka
+
+function msg {
+    echo -e "$1" 1>&2
+}
 
 function fail {
-    echo -e "FAIL: $1" >> /dev/stderr
+    msg "FAIL: $1"
     exit 1
 }
 
@@ -17,10 +21,6 @@ do
 done
 
 # Test ml4hsfe-outer-loop against slow bash alternative
-
-function msg {
-  echo -e "$1" 1>&2
-}
 
 function compareResults {
     # shellcheck disable=SC2016
@@ -109,3 +109,6 @@ do
         exit 1
     }
 done
+
+BASE=$(dirname "$(readlink -f "$0")")
+"$BASE/order-deps-test.sh"

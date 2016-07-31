@@ -4,7 +4,7 @@
 # Helper functions
 
 function msg {
-    echo -e "$1" >> /dev/stderr
+    echo -e "$1" 1>&2
 }
 
 function fail {
@@ -244,11 +244,10 @@ function testDepsOfWorksAsExpected {
     else
         fail "Key '$TESTDEPSOFKEY' not found"
     fi
-
 }
 
 function testExamplesAreJson {
-    for EX in example*.json
+    for EX in examples/order-deps-example-input*.json
     do
         run "$EX" > /dev/null ||
             fail "Failed to send '$EX' through order-deps"
@@ -256,7 +255,7 @@ function testExamplesAreJson {
 }
 
 function testOutputsAreJson {
-    for EX in example*.json
+    for EX in examples/order-deps-example-input*.json
     do
         ORDERED=$(run "$EX")
         echo "$ORDERED" | jq '.' > /dev/null ||
@@ -265,7 +264,7 @@ function testOutputsAreJson {
 }
 
 function testExampleFields {
-    for EX in example*json
+    for EX in examples/order-deps-example-input*json
     do
         FIELDS=( name module package arity quickspecable type ast dependencies )
         for FIELD in "${FIELDS[@]}"
@@ -289,7 +288,7 @@ function testExampleFields {
 }
 
 function testNoVersionInExamplePackages {
-    for EX in example*json
+    for EX in examples/order-deps-example-input*json
     do
         while read -r PACKAGE
         do
@@ -300,7 +299,7 @@ function testNoVersionInExamplePackages {
 }
 
 function testNoVersionInExampleDependencies {
-    for EX in example*json
+    for EX in examples/order-deps-example-input*json
     do
         while read -r PACKAGE
         do
@@ -312,7 +311,7 @@ function testNoVersionInExampleDependencies {
 
 function testNoDepsAfter {
     # The elements of one SCC shouldn't depend on anything in a later SCC
-    for EX in example*.json
+    for EX in examples/order-deps-example-input*.json
     do
         # DEPS stores the dependencies which have been asked for so far
         DEPS="[]"
@@ -338,7 +337,7 @@ function testNoDepsAfter {
 
 function testSiblingDepsAreCyclic {
     # Dependencies should only appear in the same SCC when there is a cycle
-    for EX in example*.json
+    for EX in examples/order-deps-example-input*.json
     do
         SCCS=$(run "$EX")
         msg "Testing with example '$EX', which gives '$(echo "$SCCS" | jq -c 'length')' SCCs"
