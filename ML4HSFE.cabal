@@ -34,6 +34,7 @@ library
                      , vector
                      -- Required by benchmarks, which cabal2nix doesn't check
                      , criterion
+                     , weigh
   exposed-modules:     ML4HSFE
                      , ML4HSFE.Parse
                      , ML4HSFE.FeatureExtraction
