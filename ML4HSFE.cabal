@@ -18,10 +18,12 @@ cabal-version:       >=1.10
 
 library
   build-depends:       aeson
+                     , array
                      , attoparsec
                      , atto-lisp
                      , base >=4.7
                      , bytestring
+                     , containers >=0.5
                      , hashable
                      , HS2AST
                      , order-deps
@@ -42,6 +44,8 @@ library
                      , ML4HSFE.Generators
                      , ML4HSFE.Loop
                      , ML4HSFE.Outer
+                     , Grapher
+                     , Types
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -71,7 +75,16 @@ executable ml4hsfe-outer-loop
                      , ML4HSFE
   hs-source-dirs:      ml4hsfe-outer-loop
   default-language:    Haskell2010
-    
+
+executable order-deps
+  main-is:             Main.hs
+  other-extensions:    DeriveGeneric, OverloadedStrings
+  build-depends:       base >=4.8
+                     , ML4HSFE
+                     , bytestring >=0.10
+  hs-source-dirs:      order-deps
+  default-language:    Haskell2010
+
 test-suite test
   default-language:    Haskell2010
   type:                exitcode-stdio-1.0
@@ -92,6 +105,21 @@ test-suite test
                      , quickspec
                      , tasty >= 0.7
                      , tasty-quickcheck
+
+test-suite order-deps-tests
+  main-is:             Main.hs
+  hs-source-dirs:      order-deps-tests
+  default-language:    Haskell2010
+  type:                exitcode-stdio-1.0
+  build-depends:       base
+                     , ML4HSFE
+                     , tasty
+                     , tasty-quickcheck
+                     , text
+                     , aeson
+                     , bytestring
+                     , containers
+                     , HS2AST
 
 benchmark time
   type:             exitcode-stdio-1.0
