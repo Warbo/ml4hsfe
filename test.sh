@@ -63,7 +63,7 @@ function bashCluster {
     # shellcheck disable=SC2016
     DEPS=$(echo "$DEPS" | jq --argfile clustered <(echo "$CLUSTERED") \
                              'map(. as $this | $clustered | map(select(.name == $this.name and .module == $this.module and .package == $this.package)) | map(.cluster) | if length == 1 then $this + {"cluster": .[0]} else $this end)')
-  done < <(echo "$DEPS" | order-deps | jq -c '.[]')
+  done < <(echo "$DEPS" | cabal run order-deps -v0 | jq -c '.[]')
 
   msg "Done"
   echo "$DEPS"

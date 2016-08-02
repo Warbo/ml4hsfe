@@ -1,28 +1,29 @@
-{-# LANGUAGE OverloadedStrings, PartialTypeSignatures #-}
+{-# LANGUAGE OverloadedStrings, PartialTypeSignatures, BangPatterns #-}
 module ML4HSFE.Loop where
 
 -- Top-level loop for processing ASTs. We use Haskell since jq+bash is slow.
 
 import qualified Data.Aeson                 as A
-import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.ByteString.Char8      as BS
 import qualified Data.HashMap.Strict        as HM
 import           Data.Maybe
 import qualified Data.Stringable            as S
+import qualified Data.Text.Encoding         as TE
 import qualified Data.Vector                as V
 import           ML4HSFE
 import           ML4HSFE.Types
 
-getAll x = A.decode x :: Maybe A.Array
+getAll x = A.decodeStrict x :: Maybe A.Array
 
 ml4hsfe :: Int -> Int -> _ -> _ -> _ -> _ -> A.Array
-ml4hsfe w h mod pkg names rawAst = V.fromList (map featureToVal (processVal w h mod pkg names rawAst))
+ml4hsfe w h mod pkg names rawAst = V.map featureToVal (V.fromList (processVal w h mod pkg names rawAst))
 
 featureToVal :: Feature -> A.Value
 featureToVal (Left  i)  = A.Number (fromInteger . toInteger $ i)
 featureToVal (Right id) = fromMaybe (error "Failed to convert ID to JSON value")
                                     (A.decode (A.encode id))
 
-handle w h x = case getAll x of
+handle !w !h !x = case getAll x of
   Nothing  -> error "Failed to parse array of ASTs"
   Just all -> V.map (A.Object . handleOne w h all . unObject) all
 
@@ -38,9 +39,11 @@ unString _ = error "Was expecting a string"
 unString' :: A.Value -> String
 unString' = S.toString . unString
 
+unBS = TE.encodeUtf8 . unString
+
 handleOne :: Int -> Int -> A.Array -> A.Object -> A.Object
 handleOne w h xs x = HM.insert "features" (A.Array features) x
-  where features = ml4hsfe w h (unString' mod) (unString' pkg) names' (unString' ast)
+  where features = ml4hsfe w h (unString' mod) (unString' pkg) names' (unBS ast)
         Just ast = HM.lookup "ast"     x
         Just mod = HM.lookup "module"  x
         Just pkg = HM.lookup "package" x

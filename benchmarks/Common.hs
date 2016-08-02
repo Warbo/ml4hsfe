@@ -2,8 +2,9 @@
 module Common where
 
 import           Data.Aeson
+import qualified Data.ByteString.Lazy       as BL
 import qualified Data.HashMap.Strict        as HM
-import qualified Data.Scientific as Scientific
+import qualified Data.Scientific            as Scientific
 import qualified Data.Text                  as T
 import qualified Data.Vector                as V
 import           ML4HSFE.Loop
@@ -11,7 +12,7 @@ import           ML4HSFE.Outer
 
 maxN = 10
 
-asts = encode (map mkAst [1..maxN])
+asts = BL.toStrict (encode (map mkAst [1..maxN]))
 
 mkAst :: Int -> Value
 mkAst n = Object (HM.fromList [

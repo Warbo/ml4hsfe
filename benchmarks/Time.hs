@@ -5,7 +5,7 @@ import           Common
 import           Control.DeepSeq
 import           Criterion.Main
 import           Data.Aeson
-import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.ByteString.Char8 as BS
 import           ML4HSFE.Loop
 import           ML4HSFE.Outer
 

@@ -5,6 +5,8 @@ module Suites.ML4HSFE where
 import qualified CoreSyn             as C
 import           Data.Aeson
 import qualified Data.AttoLisp       as L
+import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Lazy  as BL
 import           Data.Char
 import qualified Data.HashMap.Strict as HM
 import           Data.List
@@ -12,6 +14,8 @@ import           Data.Maybe
 import qualified Data.Set            as S
 import           Data.String
 import qualified Data.Stringable     as Str
+import qualified Data.Text           as T
+import qualified Data.Text.Encoding  as TE
 import qualified Data.Vector         as V
 import           FastString
 import           Generators
@@ -142,7 +146,7 @@ qualifyMods pre post = forAll mkId check
 globalsIncluded x (Positive r) (Positive c) =
   forAll safeId (globalsIncluded' x r c)
 
-globalsIncluded' x r c g = Str.toString (encode g) `isInfixOf` vec
+globalsIncluded' x r c g = BL.toStrict (encode g) `BS.isInfixOf` vec
   where vec = renderVector (featureVec (r + 30) (c + 30) (App x (Var (Global (G g)))))
 
 globalVecContents padN (Positive n) =
@@ -166,12 +170,12 @@ globalModContents padN (Positive n) =
   where checkContents i = forAll (mkLisp (n `mod` 20) (asLocal i))
                                  globalModContents'
 
-          where globalModContents' l = counterexample vec $
-                                         Str.toString (encode i) `isInfixOf` vec
+          where globalModContents' l = counterexample (BS.unpack vec) $
+                                         BL.toStrict (encode i) `BS.isInfixOf` vec
                   where names = fst padN ++ [idName i] ++ snd padN
                         vec   = process 30
                                         30
                                         (idModule  i)
                                         (idPackage i)
                                         names
-                                        (Str.toString (L.encode l))
+                                        (BL.toStrict (L.encode l))

@@ -1,10 +1,13 @@
 module Main where
 
-import ML4HSFE.Loop
-import System.Environment
-import System.IO
+import           Data.Aeson
+import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Lazy  as BL
+import           ML4HSFE.Loop
+import           System.Environment
+import           System.IO
 
-main = do rawAsts <- getContents
+main = do rawAsts <- BS.getContents
           width   <- getEnv "WIDTH"
           height  <- getEnv "HEIGHT"
-          putStrLn (handleString (read width) (read height) rawAsts)
+          BS.putStrLn (BL.toStrict (encode (handle (read width) (read height) rawAsts)))

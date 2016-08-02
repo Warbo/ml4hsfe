@@ -1,10 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, PartialTypeSignatures #-}
 
 module ML4HSFE where
 
 import           Data.Aeson                 as Aeson
 import           Data.AttoLisp              as L
 import qualified Data.Attoparsec.ByteString as AB
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Char8      as BS
 import           Data.Char
 import qualified Data.HashMap.Strict        as HM
 import qualified Data.List                  as List
@@ -51,10 +53,10 @@ extractMod _ = Nothing
 countLeaves (L.String _) = 1
 countLeaves (L.List xs)  = sum (map countLeaves xs)
 
-readAst :: String -> AST
-readAst s = case AB.eitherResult (AB.parse L.lisp (S.fromString s)) of
+readAst :: BS.ByteString -> AST
+readAst s = case AB.eitherResult (AB.parse L.lisp s) of
                  Left err -> error (concat ["Couldn't read AST: ", show err,
-                                            "\n", s])
+                                            "\n", show s])
                  Right x  -> x
 
 dEFAULT = Left 0
@@ -86,13 +88,13 @@ fitMatrix width height m = padTo height empty (map (padTo width Nothing) m)
   where padTo n x xs = take n (xs ++ replicate n x)
         empty        = replicate width Nothing
 
-renderVector :: [Feature] -> String
-renderVector = (++ "]") . ("[" ++) . List.intercalate "," . map showFeature
+renderVector :: [Feature] -> BS.ByteString
+renderVector = (`BS.snoc` ']') . BS.cons '[' . BS.intercalate "," . map showFeature
 
-showFeature (Left n) = show n
-showFeature (Right g) = S.toString (Aeson.encode g)
+showFeature (Left  n) = BS.pack (show n)
+showFeature (Right g) = BL.toStrict (Aeson.encode g)
 
-processVal :: Int -> Int -> String -> String -> [String] -> String -> [Feature]
+processVal :: Int -> Int -> String -> String -> [String] -> BS.ByteString -> [Feature]
 processVal c r mod pkg names rawAst =
   let [mod', pkg'] = map sToL [mod, pkg]
       names'       = map S.fromString names
@@ -101,6 +103,7 @@ processVal c r mod pkg names rawAst =
       vec          = featureVec c r exp
    in vec
 
+process :: Int -> Int -> String -> String -> [_] -> BS.ByteString -> BS.ByteString
 process c r mod pkg names rawAst = renderVector (processVal c r mod pkg names rawAst)
 
 qualifyAst mod pkg names = qualifyMod mod pkg names . unwrapAst

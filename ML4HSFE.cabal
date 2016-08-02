@@ -52,7 +52,8 @@ executable ML4HSFE
   main-is:             Main.hs
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.8 && <4.9
+  build-depends:       base
+                     , bytestring
                      , ML4HSFE
   hs-source-dirs:      ml4hsfe
   default-language:    Haskell2010
@@ -61,7 +62,9 @@ executable ml4hsfe-loop
   main-is:             Main.hs
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.8 && <4.9
+  build-depends:       aeson
+                     , base
+                     , bytestring
                      , ML4HSFE
   hs-source-dirs:      ml4hsfe-loop
   default-language:    Haskell2010
@@ -90,6 +93,7 @@ test-suite test
   hs-source-dirs:      test
   main-is:             Main.hs
   build-depends:       base >=4.7
+                     , bytestring
                      , ML4HSFE
                      , HS2AST
                      , ghc
@@ -104,6 +108,7 @@ test-suite test
                      , quickspec
                      , tasty >= 0.7
                      , tasty-quickcheck
+                     , text
 
 test-suite order-deps-tests
   main-is:             Main.hs
