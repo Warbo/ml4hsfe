@@ -89,6 +89,7 @@ prop_haveNextSCC as = distinct as ==> case nextSCC as of
     Nothing -> null as
     Just x  -> not (null (DG.flattenSCC x))
   where distinct [] = True
+        distinct xs | all (\(a,b,cs) -> a `elem` cs) xs = False
         distinct (x:xs) = x `notElem` xs && distinct xs
 
 prop_combineSCCsLength :: [DG.SCC Int] -> Property
