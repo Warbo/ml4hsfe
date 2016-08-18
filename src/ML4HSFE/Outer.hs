@@ -36,9 +36,9 @@ instance Hashable Package
 fromRight (Right x) = x
 fromRight (Left  e) = error e
 
-clusterLoop :: String -> IO ASTs
+clusterLoop :: BS.ByteString -> IO ASTs
 clusterLoop s = clusterSCCs asts (fromRight (eitherDecode' (S.fromString sccsStr)))
-  where asts    = fromRight (eitherDecode' (S.fromString s))
+  where asts    = fromRight (eitherDecode' s)
         sccsStr = order (S.toString s)
 
 clusterLoopT :: _ -> IO ASTs

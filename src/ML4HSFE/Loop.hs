@@ -5,6 +5,7 @@ module ML4HSFE.Loop where
 
 import qualified Data.Aeson                 as A
 import qualified Data.ByteString.Char8      as BS
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.HashMap.Strict        as HM
 import           Data.Maybe
 import qualified Data.Stringable            as S
@@ -13,7 +14,7 @@ import qualified Data.Vector                as V
 import           ML4HSFE
 import           ML4HSFE.Types
 
-getAll x = A.decodeStrict x :: Maybe A.Array
+getAll x = A.decode {-Strict-} x :: Maybe A.Array
 
 ml4hsfe :: Int -> Int -> _ -> _ -> _ -> _ -> A.Array
 ml4hsfe w h mod pkg names rawAst = V.map featureToVal (V.fromList (processVal w h mod pkg names rawAst))
@@ -23,12 +24,13 @@ featureToVal (Left  i)  = A.Number (fromInteger . toInteger $ i)
 featureToVal (Right id) = fromMaybe (error "Failed to convert ID to JSON value")
                                     (A.decode (A.encode id))
 
+handle :: Int -> Int -> _ {-BS.ByteString-} -> V.Vector _
 handle !w !h !x = case getAll x of
   Nothing  -> error "Failed to parse array of ASTs"
   Just all -> V.map (A.Object . handleOne w h all . unObject) all
 
-handleString :: Int -> Int -> String -> String
-handleString w h x = S.toString (A.encode (handle w h (S.fromString x)))
+handleString :: Int -> Int -> _ {-BS.ByteString-} -> LBS.ByteString
+handleString w h x = A.encode (handle w h x)
 
 unObject (A.Object o) = o
 unObject _ = error "Was expecting an object"

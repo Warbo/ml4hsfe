@@ -12,7 +12,7 @@ import           ML4HSFE.Outer
 
 maxN = 10
 
-asts = BL.toStrict (encode (map mkAst [1..maxN]))
+asts = {-BL.toStrict-} (encode (map mkAst [1..maxN]))
 
 mkAst :: Int -> Value
 mkAst n = Object (HM.fromList [

@@ -12,9 +12,9 @@ import           ML4HSFE.Outer
 -- Our benchmark harness.
 main = defaultMain [
       bgroup "Stringy" [
-          bench "handleString" (nf   (handleString 10 10) (BS.unpack asts))
-        , bench "clusterLoop"  (nfIO (clusterLoop         (BS.unpack asts)))
-        , bench "together"     (nfIO (together            (BS.unpack asts)))
+          bench "handleString" (nf   (handleString 10 10) asts)
+        , bench "clusterLoop"  (nfIO (clusterLoop         asts))
+        , bench "together"     (nfIO (together            asts))
         ]
     , bgroup "Texty" [
           bench "handle"       (nf   (handle       10 10)            asts)

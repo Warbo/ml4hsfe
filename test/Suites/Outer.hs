@@ -3,8 +3,9 @@
 module Suites.Outer where
 
 import           Data.Aeson
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Vector         as V
+import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.HashMap.Strict        as HM
+import qualified Data.Vector                as V
 import           System.IO.Unsafe
 import           ML4HSFE.Outer
 import           ML4HSFE.Loop
@@ -45,8 +46,8 @@ clustered = unsafePerformIO $ do
   where width   = 30
         height  = 30
 
-rawAsts :: IO String
-rawAsts = readFile "examples/ml4hsfe-outer-loop-example-input.json"
+rawAsts :: IO BS.ByteString
+rawAsts = BS.readFile "examples/ml4hsfe-outer-loop-example-input.json"
 
 {-# NOINLINE haveRunWeka #-}
 haveRunWeka :: Bool

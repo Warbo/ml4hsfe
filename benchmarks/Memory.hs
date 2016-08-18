@@ -7,9 +7,9 @@ import           ML4HSFE.Outer
 import           Weigh
 
 main = mainWith $ do
-  func "handleString" (handleString 10 10) (BS.unpack asts)
-  io   "clusterLoop"  clusterLoop          (BS.unpack asts)
-  io   "together"     together             (BS.unpack asts)
+  func "handleString" (handleString 10 10) asts
+  io   "clusterLoop"  clusterLoop          asts
+  io   "together"     together             asts
 
   func "handle"       (handle 10 10)                  asts
   io   "clusterLoopT" clusterLoopT      (handle 10 10 asts)
