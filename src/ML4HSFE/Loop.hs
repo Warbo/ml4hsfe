@@ -16,8 +16,8 @@ import           ML4HSFE.Types
 
 getAll x = A.decode {-Strict-} x :: Maybe A.Array
 
-ml4hsfe :: Int -> Int -> _ -> _ -> _ -> _ -> A.Array
-ml4hsfe w h mod pkg names rawAst = V.map featureToVal (V.fromList (processVal w h mod pkg names rawAst))
+ml4hsfe :: Int -> Int -> BS.ByteString -> BS.ByteString -> [BS.ByteString] -> LBS.ByteString -> A.Array
+ml4hsfe w h mod pkg names rawAst = V.map featureToVal (V.fromList (processVal w h mod pkg names (LBS.toStrict rawAst)))
 
 featureToVal :: Feature -> A.Value
 featureToVal (Left  i)  = A.Number (fromInteger . toInteger $ i)
@@ -45,12 +45,12 @@ unBS = TE.encodeUtf8 . unString
 
 handleOne :: Int -> Int -> A.Array -> A.Object -> A.Object
 handleOne w h xs x = HM.insert "features" (A.Array features) x
-  where features = ml4hsfe w h (unString' mod) (unString' pkg) names' (unBS ast)
+  where features = ml4hsfe w h (unBS mod) (unBS pkg) names' (LBS.fromStrict (unBS ast))
         Just ast = HM.lookup "ast"     x
         Just mod = HM.lookup "module"  x
         Just pkg = HM.lookup "package" x
         names    = V.map (HM.lookup "name" . unObject) (V.filter matchPkgMod xs)
-        names'   = V.toList (V.map (\(Just s) -> unString' s) names)
+        names'   = V.toList (V.map (\(Just s) -> unBS s) names)
         matchPkgMod y' = let y = unObject y'
                           in (HM.lookup "package" y == Just pkg) &&
                              (HM.lookup "module"  y == Just mod)

@@ -14,6 +14,7 @@ import           Data.Maybe
 import qualified Data.Scientific            as Sci
 import qualified Data.Stringable            as S
 import qualified Data.Text                  as T
+import qualified Data.Text.Encoding         as TE
 import qualified Data.Vector                as V
 import           ML4HSFE.FeatureExtraction
 import           HS2AST.Types
@@ -94,20 +95,20 @@ renderVector = (`BS.snoc` ']') . BS.cons '[' . BS.intercalate "," . map showFeat
 showFeature (Left  n) = BS.pack (show n)
 showFeature (Right g) = BL.toStrict (Aeson.encode g)
 
-processVal :: Int -> Int -> String -> String -> [String] -> BS.ByteString -> [Feature]
+processVal :: Int -> Int -> BS.ByteString -> BS.ByteString -> [BS.ByteString] -> BS.ByteString -> [Feature]
 processVal c r mod pkg names rawAst =
   let [mod', pkg'] = map sToL [mod, pkg]
-      names'       = map S.fromString names
+      names'       = map TE.decodeUtf8 names
       ast          = readAst rawAst
       exp          = qualifyExpr mod' pkg' names' ast
       vec          = featureVec c r exp
    in vec
 
-process :: Int -> Int -> String -> String -> [_] -> BS.ByteString -> BS.ByteString
+process :: Int -> Int -> BS.ByteString -> BS.ByteString -> [_] -> BS.ByteString -> BS.ByteString
 process c r mod pkg names rawAst = renderVector (processVal c r mod pkg names rawAst)
 
 qualifyAst mod pkg names = qualifyMod mod pkg names . unwrapAst
 
 qualifyExpr mod pkg names = fromJust . readExpr . qualifyAst mod pkg names
 
-sToL = L.String . S.fromString
+sToL = L.String . TE.decodeUtf8

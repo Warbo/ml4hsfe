@@ -11,4 +11,4 @@ main = do rawAst <- BS.getContents
           mod    <- getEnv "MOD"
           pkg    <- getEnv "PKG"
           names  <- getEnv "NAMES"
-          BS.putStrLn (process (read width) (read height) mod pkg (read names) rawAst)
+          BS.putStrLn (process (read width) (read height) (BS.pack mod) (BS.pack pkg) (read names) rawAst)

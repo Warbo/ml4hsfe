@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, PartialTypeSignatures #-}
 
 module Suites.Outer where
 
@@ -24,27 +24,30 @@ tests = testGroup "Outer loop tests" $ if haveRunWeka
     ]
   else []
 
-arrayOfObjects = all isOb (V.toList clustered)
+arrayOfObjects = all isOb clustered
   where isOb (Object _) = True
         isOb x          = error (show (("Expected", "Object _"),
                                        ("Got",      x)))
 
-objectsHaveClusters = all hasCluster (V.toList clustered)
+objectsHaveClusters = all hasCluster clustered
   where hasCluster (Object o) = "cluster" `HM.member` o
 
-clustersAreNumbers = all clusterIsNum (V.toList clustered)
+clustersAreNumbers = all clusterIsNum clustered
   where clusterIsNum (Object o) = case HM.lookup "cluster" o of
           Just (Number _) -> True
           x               -> error (show (("Expected", "Just (Number _)"),
                                           ("Got",      x)))
 
 {-# NOINLINE clustered #-}
-clustered :: ASTs
-clustered = unsafePerformIO $ do
+clustered :: [Value]
+clustered = V.toList $ unsafePerformIO $ do
     asts <- rawAsts
-    clusterLoop (handleString width height asts)
-  where width   = 30
-        height  = 30
+    let trimmed = case decode asts :: Maybe [Value] of
+                    Nothing -> error "Failed to trim ASTs"
+                    Just l  -> encode . take 100 $ l
+    clusterLoop (handleString width height trimmed)
+  where width  = 30
+        height = 30
 
 rawAsts :: IO BS.ByteString
 rawAsts = BS.readFile "examples/ml4hsfe-outer-loop-example-input.json"

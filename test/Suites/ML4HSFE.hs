@@ -159,8 +159,8 @@ globalVecContents padN (Positive n) =
                                           "expr",  expr)) $
                       Right i `elem` vec
                   where names = fst padN ++ [idName i] ++ snd padN
-                        expr  = qualifyExpr (sToL (idModule  i))
-                                            (sToL (idPackage i))
+                        expr  = qualifyExpr (sToL (Str.fromString (idModule  i)))
+                                            (sToL (Str.fromString (idPackage i)))
                                             (map Str.fromString names)
                                             l
                         vec   = featureVec 30 30 expr
@@ -175,7 +175,7 @@ globalModContents padN (Positive n) =
                   where names = fst padN ++ [idName i] ++ snd padN
                         vec   = process 30
                                         30
-                                        (idModule  i)
-                                        (idPackage i)
-                                        names
+                                        (Str.fromString (idModule  i))
+                                        (Str.fromString (idPackage i))
+                                        (map Str.fromString names)
                                         (BL.toStrict (L.encode l))

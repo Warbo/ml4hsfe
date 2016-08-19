@@ -41,6 +41,6 @@ mkId = do n <- arbitrary `suchThat` validVar
 
 asLocal i = L.List ["Var", L.List ["name", L.String (Str.fromString (idName i))]]
 
-asGlobal i = L.List ["Var", L.List [L.List ["name", sToL (idName    i)],
-                                    L.List ["mod",  sToL (idModule  i)],
-                                    L.List ["pkg",  sToL (idPackage i)]]]
+asGlobal i = L.List ["Var", L.List [L.List ["name", sToL (Str.fromString (idName    i))],
+                                    L.List ["mod",  sToL (Str.fromString (idModule  i))],
+                                    L.List ["pkg",  sToL (Str.fromString (idPackage i))]]]
