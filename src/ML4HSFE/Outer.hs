@@ -1,6 +1,7 @@
 {-# LANGUAGE PartialTypeSignatures, OverloadedStrings, DeriveGeneric, BangPatterns #-}
 module ML4HSFE.Outer where
 
+import           Control.Concurrent
 import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Types
@@ -19,8 +20,10 @@ import qualified Grapher                    as OD -- From order-deps
 import qualified HS2AST.Types               as H
 import           System.Environment
 import           System.Exit
+import           System.IO
 import           System.IO.Unsafe
 import           System.Process
+import qualified System.Process.ByteString.Lazy as SBS
 
 type ASTs   = Array
 type SCC    = Array
@@ -155,29 +158,30 @@ runWeka asts = do
 
 -- From https://passingcuriosity.com/2015/haskell-reading-process-safe-deadlock
 gatherOutput :: ProcessHandle -> _ -> IO (ExitCode, BS.ByteString)
-gatherOutput ph h = work mempty
+gatherOutput hProc hOut = work mempty
   where work (!acc) = do
-          -- Read any outstanding input.
-          bs <- BS.hGetNonBlocking h (64 * 1024)
-          let acc' = acc <> bs
-          -- Check on the process.
-          s <- getProcessExitCode ph
-          -- Exit or loop.
-          case s of
-              Nothing -> work acc'
-              Just ec -> do
-                  -- Get any last bit written between the read and the status
-                  -- check.
-                  last <- BS.hGetContents h
-                  return (ec, acc' <> last)
+          output <- BS.hGetNonBlocking hOut (64 * 1024)
+          let acc' = acc <> output
+          mCode <- getProcessExitCode hProc
+          case mCode of
+              Nothing -> do
+                  threadDelay 100000  -- 1/10 seconds
+                  work acc'
+              Just code -> do
+                  remaining <- BS.hGetContents hOut
+                  return (code, acc' <> remaining)
 
 -- | Runs the given command, piping the given ByteString into stdin, returning
 --   stdout and the ExitCode. stderr is inherited.
 runCmdStdIO :: CreateProcess -> LBS.ByteString -> IO (LBS.ByteString, ExitCode)
-runCmdStdIO c i = do (Just hIn, Just hOut, Nothing, hProc) <- createProcess c
+runCmdStdIO c i = do (code, sout, serr) <- SBS.readCreateProcessWithExitCode c i
+                     LBS.hPut stderr serr
+                     return (sout, code)
+{-runCmdStdIO c i = do (Just hIn, Just hOut, Nothing, hProc) <- createProcess c
                      BS.hPut hIn (LBS.toStrict i)
+                     hFlush hIn
                      (code, out) <- gatherOutput hProc hOut
-                     return (LBS.fromStrict out, code)
+                     return (LBS.fromStrict out, code)-}
 
 setClustersFrom :: ASTs -> Prop ClusterID -> ASTs
 setClustersFrom into from = V.map (`setClusterFrom` from) into

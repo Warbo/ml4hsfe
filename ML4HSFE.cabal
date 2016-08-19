@@ -27,6 +27,7 @@ library
                      , hashable
                      , HS2AST
                      , process
+                     , process-extras
                      , QuickCheck
                      , scientific
                      , stringable

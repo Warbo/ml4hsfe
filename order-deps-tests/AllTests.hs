@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module AllTests (tests) where
 
 import           Data.Aeson
@@ -34,9 +35,15 @@ instance Arbitrary ASTId where
                    , aDeps = d
                    }
 
-instance Arbitrary a => Arbitrary (DG.SCC a) where
-  arbitrary = oneof [DG.AcyclicSCC <$> arbitrary,
+instance Arbitrary (DG.SCC Int) where
+  arbitrary = oneof [DG.AcyclicSCC <$>         arbitrary,
                      DG.CyclicSCC  <$> listOf1 arbitrary]
+
+instance (Arbitrary a, Arbitrary b, Eq a) => Arbitrary (DG.SCC (a, b, [a])) where
+  arbitrary = oneof [DG.AcyclicSCC <$>         notDodgy,
+                     DG.CyclicSCC  <$> listOf1 notDodgy]
+    where notDodgy = arbitrary `suchThat` fine
+          fine (a, b, cs) = a `notElem` cs
 
 tests :: TestTree
 tests = testGroup "Tests" [
