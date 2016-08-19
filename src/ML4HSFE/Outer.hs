@@ -1,13 +1,15 @@
-{-# LANGUAGE PartialTypeSignatures, OverloadedStrings, DeriveGeneric #-}
+{-# LANGUAGE PartialTypeSignatures, OverloadedStrings, DeriveGeneric, BangPatterns #-}
 module ML4HSFE.Outer where
 
 import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.ByteString.Char8      as BS
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import           Data.Hashable
 import qualified Data.HashMap.Strict        as HM
 import           Data.Maybe
+import           Data.Monoid
 import qualified Data.Scientific            as Sci
 import qualified Data.Stringable            as S
 import qualified Data.Text                  as T
@@ -16,6 +18,7 @@ import           GHC.Generics (Generic)
 import qualified Grapher                    as OD -- From order-deps
 import qualified HS2AST.Types               as H
 import           System.Environment
+import           System.Exit
 import           System.IO.Unsafe
 import           System.Process
 
@@ -36,7 +39,7 @@ instance Hashable Package
 fromRight (Right x) = x
 fromRight (Left  e) = error e
 
-clusterLoop :: BS.ByteString -> IO ASTs
+clusterLoop :: LBS.ByteString -> IO ASTs
 clusterLoop s = clusterSCCs asts (fromRight (eitherDecode' (S.fromString sccsStr)))
   where asts    = fromRight (eitherDecode' s)
         sccsStr = order (S.toString s)
@@ -139,11 +142,42 @@ runWekaCmd = unsafePerformIO $ do
 
 runWeka :: ASTs -> IO (Prop ClusterID)
 runWeka asts = do
-    stdout <- readProcess runWekaCmd [] stdin
+    (stdout, ExitSuccess) <- runCmdStdIO cmd stdin
     return (toClusters (parse stdout))
-  where stdin = S.toString (encode asts)
-        parse         = fromRight . eitherDecode' . S.fromString
+  where stdin         = encode asts
+        cmd           = (proc runWekaCmd []) {
+                            std_in  = CreatePipe,
+                            std_out = CreatePipe,
+                            std_err = Inherit
+                          }
+        parse         = fromRight . eitherDecode'
         toClusters xs = readAsts xs "cluster" (C . unNum)
+
+-- From https://passingcuriosity.com/2015/haskell-reading-process-safe-deadlock
+gatherOutput :: ProcessHandle -> _ -> IO (ExitCode, BS.ByteString)
+gatherOutput ph h = work mempty
+  where work (!acc) = do
+          -- Read any outstanding input.
+          bs <- BS.hGetNonBlocking h (64 * 1024)
+          let acc' = acc <> bs
+          -- Check on the process.
+          s <- getProcessExitCode ph
+          -- Exit or loop.
+          case s of
+              Nothing -> work acc'
+              Just ec -> do
+                  -- Get any last bit written between the read and the status
+                  -- check.
+                  last <- BS.hGetContents h
+                  return (ec, acc' <> last)
+
+-- | Runs the given command, piping the given ByteString into stdin, returning
+--   stdout and the ExitCode. stderr is inherited.
+runCmdStdIO :: CreateProcess -> LBS.ByteString -> IO (LBS.ByteString, ExitCode)
+runCmdStdIO c i = do (Just hIn, Just hOut, Nothing, hProc) <- createProcess c
+                     BS.hPut hIn (LBS.toStrict i)
+                     (code, out) <- gatherOutput hProc hOut
+                     return (LBS.fromStrict out, code)
 
 setClustersFrom :: ASTs -> Prop ClusterID -> ASTs
 setClustersFrom into from = V.map (`setClusterFrom` from) into
