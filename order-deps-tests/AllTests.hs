@@ -24,9 +24,6 @@ geomList :: Gen a -> Gen [a]
 geomList g = do x <- g
                 oneof [pure [], (x:) <$> geomList g]
 
-instance Arbitrary T.Text where
-  arbitrary = T.pack <$> arbitrary
-
 instance Arbitrary ASTId where
   arbitrary = do i <- arbitrary
                  d <- geomList arbitrary

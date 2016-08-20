@@ -75,7 +75,7 @@ evalTree Nothing  = error "Got no tree"
 evalTree (Just x) = walkE x
 
 canReadLocalVars x =
-  case readLocal (L.List ["name", L.String (Str.fromString x)]) of
+  case readLocal (L.List ["name", L.String x]) of
     Nothing     -> error "Failed to read"
     Just (L x') -> x == x'
 
@@ -133,9 +133,9 @@ instance IsString PackageName where
   fromString = PackageName . mkFastString
 
 qualifyMods pre post = forAll mkId check
-  where check i = g `isIn` qualifyMod m p [Str.fromString (idName i)] (L.List (pre ++ [l] ++ post))
-          where m = L.String (Str.fromString (idModule  i))
-                p = L.String (Str.fromString (idPackage i))
+  where check i = g `isIn` qualifyMod m p [idName i] (L.List (pre ++ [l] ++ post))
+          where m = L.String (idModule  i)
+                p = L.String (idPackage i)
                 g = asGlobal i
                 l = asLocal  i
                 isIn :: L.Lisp -> L.Lisp -> Bool
@@ -159,9 +159,9 @@ globalVecContents padN (Positive n) =
                                           "expr",  expr)) $
                       Right i `elem` vec
                   where names = fst padN ++ [idName i] ++ snd padN
-                        expr  = qualifyExpr (sToL (Str.fromString (idModule  i)))
-                                            (sToL (Str.fromString (idPackage i)))
-                                            (map Str.fromString names)
+                        expr  = qualifyExpr (L.String (idModule  i))
+                                            (L.String (idPackage i))
+                                            names
                                             l
                         vec   = featureVec 30 30 expr
 
@@ -175,7 +175,7 @@ globalModContents padN (Positive n) =
                   where names = fst padN ++ [idName i] ++ snd padN
                         vec   = process 30
                                         30
-                                        (Str.fromString (idModule  i))
-                                        (Str.fromString (idPackage i))
-                                        (map Str.fromString names)
+                                        (TE.encodeUtf8 (idModule  i))
+                                        (TE.encodeUtf8 (idPackage i))
+                                        (map TE.encodeUtf8 names)
                                         (BL.toStrict (L.encode l))

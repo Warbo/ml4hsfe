@@ -42,13 +42,13 @@ have f [] = False
 have f (x:xs) | isNothing (f x) = have f xs
 have _ _ = True
 
-extractPkg (L.List [L.String "pkg", L.String p]) = Just (T.unpack p)
+extractPkg  (L.List [L.String "pkg", L.String p]) = Just p
 extractPkg _ = Nothing
 
-extractName (L.List [L.String "name", L.String n]) = Just (T.unpack n)
+extractName (L.List [L.String "name", L.String n]) = Just n
 extractName _ = Nothing
 
-extractMod (L.List [L.String "mod", L.String m]) = Just (T.unpack m)
+extractMod  (L.List [L.String "mod", L.String m]) = Just m
 extractMod _ = Nothing
 
 countLeaves (L.String _) = 1

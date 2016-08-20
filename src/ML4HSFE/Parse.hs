@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ML4HSFE.Parse where
 
-import qualified Data.AttoLisp as L
+import qualified Data.AttoLisp   as L
 import           Data.Char
+import qualified Data.Text       as T
 import           GHC.Stack
 import           HS2AST.Types
 import qualified Data.Stringable as S
@@ -60,29 +61,29 @@ readExpr' ast = case ast of
 readLocal :: AST -> Maybe Local
 readLocal (L.List ["Var", x])             = readLocal x
 readLocal (L.List (L.List ["name", x]:_)) = readLocal (L.List ["name", x]) -- QuickCheck puts globals in the locals...
-readLocal (L.List ["name", L.String x]) = Just (L (S.toString x))
+readLocal (L.List ["name", L.String x]) = Just (L x)
 readLocal x = errorWithStackTrace ("Unexpected argument to readLocal " ++ show x)
 
 -- FIXME: Parsing s-expressions into Identifiers should be provided by HS2AST
 readId x = case x of
   L.List ["Var", e] -> readId e
-  L.List ["name", L.String n] -> Just (Local (L (S.toString n)))
+  L.List ["name", L.String n] -> Just (Local (L n))
   L.List [L.List ["name", L.String n],
           L.List ["mod",  L.String m],
-          L.List ["pkg",  L.String p]] -> if isCons (S.toString n)
+          L.List ["pkg",  L.String p]] -> if isCons n
                                              then Just (Constructor ())
                                              else Just (Global (G ID {
-                                                 idPackage = S.toString p,
-                                                 idModule  = S.toString m,
-                                                 idName    = S.toString n
+                                                 idPackage = p,
+                                                 idModule  = m,
+                                                 idName    = n
                                                }))
   _ -> errorWithStackTrace ("Unexpected argument to readId " ++ show x)
 
 -- | Check if a name is that of a constructor
-isCons ":"   = True
-isCons "[]"  = True
-isCons (i:_) = isUpper i
-isCons _     = False
+isCons ":"  = True
+isCons "[]" = True
+isCons ""   = False
+isCons x    = isUpper (T.head x)
 
 readAlt x = do (con, vars, e) <- asTriple x
                con'   <- readAltCon con

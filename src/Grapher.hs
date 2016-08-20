@@ -1,15 +1,15 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, BangPatterns #-}
 module Grapher where
 
 import           Data.Aeson
 import qualified Data.Array as A
 import qualified Data.ByteString.Lazy as B
 import           Data.Graph
-import           Data.Text  (Text)
+import qualified Data.Text  as T
 import           HS2AST.Types
 import           Types
 
-type Atom      =  (String, String, String)
+type Atom      =  (T.Text, T.Text, T.Text)
 type Graphable = [(Atom,   Atom,   [Atom])]
 
 instance Show v => Show (SCC v) where
@@ -41,8 +41,8 @@ injectGraphable (a, _, as) = ASTId { aId   = atomToId a,
 
 parse :: B.ByteString -> [ASTId]
 parse s = case eitherDecode s of
-               Left err -> error err
-               Right ps -> ps
+               Left err  -> error err
+               Right !ps -> ps
 
 -- Includes as many Atoms as possible in each group
 group :: [ASTId] -> [SCC Atom]

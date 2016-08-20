@@ -1,10 +1,11 @@
 module ML4HSFE.Generators where
 
-import Data.Char
-import HS2AST.Tests.Generators
-import HS2AST.Types
-import ML4HSFE.Types
-import Test.QuickCheck
+import           Data.Char
+import qualified Data.Text as T
+import           HS2AST.Tests.Generators
+import           HS2AST.Types
+import           ML4HSFE.Types
+import           Test.QuickCheck
 
 instance Arbitrary Global where
   arbitrary = G <$> arbitrary
@@ -66,4 +67,4 @@ safeId = do x <- arbitrary
               , idPackage = safe $ idPackage x
               }
 
-safe = filter (\x -> isAscii x && isPrint x && x /= '\\')
+safe = T.filter (\x -> isAscii x && isPrint x && x /= '\\')

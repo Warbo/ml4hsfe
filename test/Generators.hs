@@ -13,6 +13,7 @@ import Packages
 import SrcLoc
 import Test.QuickCheck
 import Var
+import qualified Data.Stringable as S
 
 sexprWith is = do x <- exprWith is
                   return (toSexp dummyDb x)
@@ -29,10 +30,10 @@ exprWith (i:is) = do tail <- exprWith is
 nameOf :: Identifier -> (String -> OccName) -> Gen Name
 nameOf i mkON = do u <- arbitrary
                    let m = Module {
-                               modulePackageKey = stringToPackageKey (idPackage i)
-                             , moduleName       = mkModuleName       (idModule  i)
+                               modulePackageKey = stringToPackageKey (S.toString (idPackage i))
+                             , moduleName       = mkModuleName       (S.toString (idModule  i))
                              }
-                   return (mkExternalName u m (mkON (idName i)) noSrcSpan)
+                   return (mkExternalName u m (mkON (S.toString (idName i))) noSrcSpan)
 
 -- TODO: Move this to HS2AST's Generators.hs (it's copypasta of arbitrary)
 dataConOf i = mkDataCon <$> nameOf i mkDataOcc

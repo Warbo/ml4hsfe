@@ -1,5 +1,6 @@
 module ML4HSFE.Types where
 
+import qualified Data.Text as T
 import HS2AST.Types
 
 data RoseTree = Node Feature [RoseTree] deriving (Show)
@@ -39,8 +40,8 @@ data Bind = NonRec Binder
 
 data Binder = Bind Local Expr  deriving (Show)
 
-newtype Local  = L String  deriving (Show, Eq)
-newtype Global = G { unGlobal :: Identifier }  deriving (Show, Eq)
+newtype Local  = L T.Text                     deriving (Show, Eq)
+newtype Global = G { unGlobal :: Identifier } deriving (Show, Eq)
 
 type Constructor = ()
 

@@ -4,6 +4,7 @@ module Helpers where
 import qualified Data.AttoLisp       as L
 import           Data.Char
 import qualified Data.Stringable     as Str
+import qualified Data.Text           as T
 import           Generators
 import           HS2AST.Sexpr
 import           HS2AST.Types hiding (Node)
@@ -26,11 +27,16 @@ mkLisp n l = case n of
 validLocal (L.String x) = validText x
 validLocal _ = False
 
-validText = validName . Str.toString
+validText = validName
 
-validName s = not (null s) && all isPrint s && all isAscii s && all isAlphaNum s
+validName s = not (T.null s)              &&
+              all isPrint    (T.unpack s) &&
+              all isAscii    (T.unpack s) &&
+              all isAlphaNum (T.unpack s)
 
-validId i = validName (idName i) && validName (idPackage i) && validName (idModule i)
+validId i = validName (idName    i) &&
+            validName (idPackage i) &&
+            validName (idModule  i)
 
 validVar x = validName x && not (isCons x)
 
@@ -39,8 +45,8 @@ mkId = do n <- arbitrary `suchThat` validVar
           p <- arbitrary `suchThat` validName
           return ID { idName = n, idModule = m, idPackage = p}
 
-asLocal i = L.List ["Var", L.List ["name", L.String (Str.fromString (idName i))]]
+asLocal i = L.List ["Var", L.List ["name", L.String (idName i)]]
 
-asGlobal i = L.List ["Var", L.List [L.List ["name", sToL (Str.fromString (idName    i))],
-                                    L.List ["mod",  sToL (Str.fromString (idModule  i))],
-                                    L.List ["pkg",  sToL (Str.fromString (idPackage i))]]]
+asGlobal i = L.List ["Var", L.List [L.List ["name", L.String (idName    i)],
+                                    L.List ["mod",  L.String (idModule  i)],
+                                    L.List ["pkg",  L.String (idPackage i)]]]

@@ -43,9 +43,9 @@ fromRight (Right x) = x
 fromRight (Left  e) = error e
 
 clusterLoop :: LBS.ByteString -> IO ASTs
-clusterLoop s = clusterSCCs asts (fromRight (eitherDecode' (S.fromString sccsStr)))
+clusterLoop s = clusterSCCs asts (fromRight (eitherDecode' sccsStr))
   where asts    = fromRight (eitherDecode' s)
-        sccsStr = order (S.toString s)
+        sccsStr = order s
 
 clusterLoopT :: _ -> IO ASTs
 clusterLoopT s = clusterSCCsT asts sccs
@@ -85,9 +85,9 @@ enableSccT asts s' =
        then asts
        else enable (tail s') (head s')
   where enable ss s =
-          let [name, mod, pkg] = map T.pack [H.idName    s,
-                                             H.idModule  s,
-                                             H.idPackage s]
+          let [name, mod, pkg] = [H.idName    s,
+                                  H.idModule  s,
+                                  H.idPackage s]
            in enableSccT (V.map (enableMatching (N name)
                                                 (M mod)
                                                 (P pkg))
@@ -104,8 +104,8 @@ enableMatching (N name) (M mod) (P pkg) x' = fromRight . (`parseEither` x') $ wi
                       then HM.insert "tocluster" (Bool True) x
                       else x
 
-order :: String -> String
-order = S.toString . OD.process . OD.parse . S.fromString
+order :: LBS.ByteString -> LBS.ByteString
+order = OD.process . OD.parse
 
 renderAsts :: ASTs -> String
 renderAsts = S.toString . encode
