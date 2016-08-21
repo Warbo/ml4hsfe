@@ -8,11 +8,9 @@ import HS2AST.Types
 import HS2AST.Tests.Generators
 import Module
 import Name
-import OccName
 import Packages
 import SrcLoc
 import Test.QuickCheck
-import Var
 import qualified Data.Stringable as S
 
 sexprWith is = do x <- exprWith is

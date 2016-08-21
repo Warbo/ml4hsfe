@@ -2,7 +2,6 @@
 module Grapher where
 
 import           Data.Aeson
-import qualified Data.Array as A
 import qualified Data.ByteString.Lazy as B
 import           Data.Graph
 import qualified Data.Text  as T

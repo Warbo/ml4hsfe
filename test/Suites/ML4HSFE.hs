@@ -7,18 +7,9 @@ import           Data.Aeson
 import qualified Data.AttoLisp       as L
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy  as BL
-import           Data.Char
-import qualified Data.HashMap.Strict as HM
-import           Data.List
-import           Data.Maybe
-import qualified Data.Set            as S
 import           Data.String
-import qualified Data.Stringable     as Str
-import qualified Data.Text           as T
 import qualified Data.Text.Encoding  as TE
-import qualified Data.Vector         as V
 import           FastString
-import           Generators
 import           Helpers
 import           HS2AST.Sexpr
 import           HS2AST.Types hiding (Node)
@@ -29,7 +20,7 @@ import           ML4HSFE.Parse
 import           ML4HSFE.Types
 import           PackageConfig
 import           Test.QuickCheck
-import           Test.Tasty             (defaultMain, testGroup, localOption)
+import           Test.Tasty             (testGroup)
 import           Test.Tasty.QuickCheck
 
 tests = testGroup "Feature extraction tests" [
@@ -65,11 +56,11 @@ canReinstateLists e = case getRecs (toSexp (const Nothing) e) of
         getRecs   _                  = []
         valid x x' = length x' == length' x
         length' (L.List ["[]"])         = 0
-        length' (L.List ["(:)", x, xs]) = 1 + length' xs
+        length' (L.List ["(:)", _, xs]) = 1 + length' xs
         length' _                       = error "Invalid uninstated list"
 
 syntaxMatches :: String -> C.CoreExpr -> Bool
-syntaxMatches p = evalTree . readExpr . toSexp (const (Just ""))
+syntaxMatches _ = evalTree . readExpr . toSexp (const (Just ""))
 
 evalTree Nothing  = error "Got no tree"
 evalTree (Just x) = walkE x
@@ -110,7 +101,7 @@ walkI i = case i of
 
 walkC () = True
 
-walkL (L !x) = True
+walkL (L !_) = True
 
 walkB (NonRec x)  = walkBinder x
 walkB (Rec    xs) = all walkBinder xs
@@ -122,7 +113,7 @@ walkLit LitStr = True
 
 walkA (Alt ac e ls) = walkAC ac && walkE e && all walkL ls
 
-walkG (G x) = True
+walkG (G _) = True
 
 walkAC a = case a of
   DataAlt x -> walkC   x

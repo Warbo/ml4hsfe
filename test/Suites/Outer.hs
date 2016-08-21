@@ -9,11 +9,9 @@ import qualified Data.Vector                as V
 import           System.IO.Unsafe
 import           ML4HSFE.Outer
 import           ML4HSFE.Loop
-import           Test.QuickCheck
-import           Test.QuickCheck.Monadic
 import           System.Exit
 import           System.Process
-import           Test.Tasty             (defaultMain, testGroup, localOption)
+import           Test.Tasty             (testGroup)
 import           Test.Tasty.QuickCheck
 
 tests = testGroup "Outer loop tests" $ if haveRunWeka
@@ -57,5 +55,5 @@ haveRunWeka :: Bool
 haveRunWeka = unsafePerformIO $ haveCommand "runWeka"
 
 haveCommand c = do
-  (c, _, _) <- readCreateProcessWithExitCode (shell ("hash " ++ c)) ""
-  return (c == ExitSuccess)
+  (code, _, _) <- readCreateProcessWithExitCode (shell ("hash " ++ c)) ""
+  return (code == ExitSuccess)

@@ -3,12 +3,9 @@ module Helpers where
 
 import qualified Data.AttoLisp       as L
 import           Data.Char
-import qualified Data.Stringable     as Str
 import qualified Data.Text           as T
-import           Generators
-import           HS2AST.Sexpr
+import Generators ()
 import           HS2AST.Types hiding (Node)
-import           ML4HSFE             as FE
 import           ML4HSFE.Parse
 import           Test.QuickCheck
 

@@ -3,9 +3,8 @@ module Suites.Order (tests) where
 
 import           Data.Aeson
 import qualified Data.Graph as DG
-import qualified Data.Text as T
 import           Grapher
-import           HS2AST.Tests.Generators
+import           HS2AST.Tests.Generators ()
 import           Test.Tasty
 import           Test.Tasty.QuickCheck as QC
 import Types
@@ -40,7 +39,7 @@ instance (Arbitrary a, Arbitrary b, Eq a) => Arbitrary (DG.SCC (a, b, [a])) wher
   arbitrary = oneof [DG.AcyclicSCC <$>         notDodgy,
                      DG.CyclicSCC  <$> listOf1 notDodgy]
     where notDodgy = arbitrary `suchThat` fine
-          fine (a, b, cs) = a `notElem` cs
+          fine (x, _, xs) = x `notElem` xs
 
 tests :: TestTree
 tests = testGroup "Tests" [
@@ -93,7 +92,7 @@ prop_haveNextSCC as = distinct as ==> case nextSCC as of
     Nothing -> null as
     Just x  -> not (null (DG.flattenSCC x))
   where distinct [] = True
-        distinct xs | all (\(a,b,cs) -> a `elem` cs) xs = False
+        distinct xs | all (\(y,_,ys) -> y `elem` ys) xs = False
         distinct (x:xs) = x `notElem` xs && distinct xs
 
 prop_combineSCCsLength :: [DG.SCC Int] -> Property

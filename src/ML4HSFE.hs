@@ -7,15 +7,9 @@ import           Data.AttoLisp              as L
 import qualified Data.Attoparsec.ByteString as AB
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Char8      as BS
-import           Data.Char
-import qualified Data.HashMap.Strict        as HM
 import qualified Data.List                  as List
 import           Data.Maybe
-import qualified Data.Scientific            as Sci
-import qualified Data.Stringable            as S
-import qualified Data.Text                  as T
 import qualified Data.Text.Encoding         as TE
-import qualified Data.Vector                as V
 import           ML4HSFE.FeatureExtraction
 import           HS2AST.Types
 import           ML4HSFE.Parse
@@ -38,9 +32,9 @@ extractId (L.List xs) | have extractPkg  xs &&
 extractId _ = Nothing
 
 have :: (a -> Maybe b) -> [a] -> Bool
-have f [] = False
 have f (x:xs) | isNothing (f x) = have f xs
-have _ _ = True
+have _ [] = False
+have _ _  = True
 
 extractPkg  (L.List [L.String "pkg", L.String p]) = Just p
 extractPkg _ = Nothing
@@ -59,8 +53,6 @@ readAst s = case AB.eitherResult (AB.parse L.lisp s) of
                  Left err -> error (concat ["Couldn't read AST: ", show err,
                                             "\n", show s])
                  Right x  -> x
-
-dEFAULT = Left 0
 
 data WithFeature = WC {
     wcId      :: Identifier

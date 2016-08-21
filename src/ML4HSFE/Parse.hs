@@ -6,7 +6,6 @@ import           Data.Char
 import qualified Data.Text       as T
 import           GHC.Stack
 import           HS2AST.Types
-import qualified Data.Stringable as S
 import           ML4HSFE.Types
 
 -- | Our incoming s-expressions are a little awkward. Here we unwrap lists which

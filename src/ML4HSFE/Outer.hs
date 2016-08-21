@@ -2,7 +2,6 @@
 module ML4HSFE.Outer where
 
 import           Control.Concurrent
-import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Types
 import qualified Data.ByteString.Char8      as BS
@@ -208,7 +207,7 @@ setFeaturesFrom clusters (Object ast) =
                                  ast
 
 setFVFrom :: Prop ClusterID -> Value -> Value
-setFVFrom clusters (Number n) = Number n
+setFVFrom _        (Number n) = Number n
 setFVFrom clusters (Object f) = Number . (300 +) $ case new of
                                                     Nothing    -> 0
                                                     Just (C n) -> n

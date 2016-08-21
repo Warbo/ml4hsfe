@@ -43,7 +43,7 @@ toTreeBind ctx x = case x of
 
 -- Extend ctx in toTreeBind rather than here, to allow recursion
 toTreeBinder ctx x = case x of
-  Bind l e -> Node fBind [toTree ctx e]
+  Bind _ e -> Node fBind [toTree ctx e]
 
 -- Look up fresh variable names from buried Binds
 localsIn []            = []
