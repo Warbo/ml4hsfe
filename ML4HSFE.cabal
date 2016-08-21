@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                ML4HSFE
-version:             0.1.1.0
+version:             0.1.1.1
 synopsis:            ML4PG-like feature extraction for Haskell ASTs
 -- description:
 homepage:            http://chriswarbo.net/git/ml4hsfe
@@ -78,15 +78,6 @@ executable ml4hsfe-outer-loop
   hs-source-dirs:      ml4hsfe-outer-loop
   default-language:    Haskell2010
 
-executable order-deps
-  main-is:             Main.hs
-  other-extensions:    DeriveGeneric, OverloadedStrings
-  build-depends:       base >=4.8
-                     , ML4HSFE
-                     , bytestring >=0.10
-  hs-source-dirs:      order-deps
-  default-language:    Haskell2010
-
 test-suite test
   default-language:    Haskell2010
   type:                exitcode-stdio-1.0
@@ -109,21 +100,6 @@ test-suite test
                      , tasty >= 0.7
                      , tasty-quickcheck
                      , text
-
-test-suite order-deps-tests
-  main-is:             Main.hs
-  hs-source-dirs:      order-deps-tests
-  default-language:    Haskell2010
-  type:                exitcode-stdio-1.0
-  build-depends:       base
-                     , ML4HSFE
-                     , tasty
-                     , tasty-quickcheck
-                     , text
-                     , aeson
-                     , bytestring
-                     , containers
-                     , HS2AST
 
 benchmark time
   type:             exitcode-stdio-1.0

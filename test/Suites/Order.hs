@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-module AllTests (tests) where
+module Suites.Order (tests) where
 
 import           Data.Aeson
 import qualified Data.Graph as DG
