@@ -109,6 +109,3 @@ do
         exit 1
     }
 done
-
-BASE=$(dirname "$(readlink -f "$0")")
-"$BASE/order-deps-test.sh"
