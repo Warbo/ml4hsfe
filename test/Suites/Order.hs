@@ -82,7 +82,8 @@ prop_sccDepsMatch ids = all (`elem` astDs) sccDs && all (`elem` sccDs) astDs
         inIds x = any ((== atomToId x) . aId) ids
 
 prop_alwaysDepLessScc a as = not (null (depLess (DG.stronglyConnCompR xs)))
-  where xs = stripUnknownDeps (a:as)
+  where xs = map removeSelfDeps (stripUnknownDeps (a:as))
+        removeSelfDeps (x, y, zs) = (x, y, filter (/= x) zs)
 
 prop_bigSCCAll aids = counterexample debug test
   where test    = all (`elem` grouped) atoms
