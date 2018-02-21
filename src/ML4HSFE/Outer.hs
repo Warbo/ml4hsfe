@@ -2,6 +2,7 @@
 module ML4HSFE.Outer where
 
 import           Control.Concurrent
+import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Types
 import qualified Data.ByteString.Char8      as BS
@@ -55,16 +56,12 @@ clusterLoopT s = clusterSCCsT asts sccs
                V.map (fromRight . parseEither parseJSON) $ s
 
 clusterSCCs :: ASTs -> [SCC] -> IO ASTs
-clusterSCCs asts []         = return asts
-clusterSCCs asts (scc:sccs) = do c <- regularCluster (en scc)
-                                 clusterSCCs c sccs
-  where en = enableScc asts
+clusterSCCs = foldM go
+  where go asts scc = regularCluster (enableScc asts scc)
 
 clusterSCCsT :: ASTs -> [_] -> IO ASTs
-clusterSCCsT asts []         = return asts
-clusterSCCsT asts (scc:sccs) = do c <- regularCluster (en scc)
-                                  clusterSCCsT c sccs
-  where en = enableSccT asts
+clusterSCCsT = foldM go
+  where go asts scc = regularCluster (enableSccT asts scc)
 
 enableScc :: ASTs -> SCC -> ASTs
 enableScc asts s' =
@@ -113,9 +110,8 @@ renderAsts = S.toString . encode
 -- these finalised features, then splice the resulting numbers back into the
 -- original asts array (so we can set new values for the features next time)
 regularCluster :: ASTs -> IO ASTs
-regularCluster asts = do clusterNums <- runWeka withFeatures
+regularCluster asts = do clusterNums <- runWeka (setOwnFeatures asts)
                          return (setClustersFrom asts clusterNums)
-  where withFeatures = setOwnFeatures asts
 
 setOwnFeatures :: ASTs -> ASTs
 setOwnFeatures asts = let clusters = readAsts asts "cluster" (C . unNum)
@@ -176,11 +172,6 @@ runCmdStdIO :: CreateProcess -> LBS.ByteString -> IO (LBS.ByteString, ExitCode)
 runCmdStdIO c i = do (code, sout, serr) <- SBS.readCreateProcessWithExitCode c i
                      LBS.hPut stderr serr
                      return (sout, code)
-{-runCmdStdIO c i = do (Just hIn, Just hOut, Nothing, hProc) <- createProcess c
-                     BS.hPut hIn (LBS.toStrict i)
-                     hFlush hIn
-                     (code, out) <- gatherOutput hProc hOut
-                     return (LBS.fromStrict out, code)-}
 
 setClustersFrom :: ASTs -> Prop ClusterID -> ASTs
 setClustersFrom into from = V.map (`setClusterFrom` from) into
