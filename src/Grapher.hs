@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, BangPatterns #-}
+{-# LANGUAGE BangPatterns #-}
 module Grapher where
 
 import           Data.Aeson
