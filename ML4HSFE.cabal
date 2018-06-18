@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                ML4HSFE
-version:             0.3.0.0
+version:             0.3.1.0
 synopsis:            ML4PG-like feature extraction for Haskell ASTs
 -- description:
 homepage:            http://chriswarbo.net/git/ml4hsfe
@@ -71,8 +71,12 @@ test-suite test
                      , stringable
                      , unordered-containers
                      , process
-                     , QuickCheck
+                     -- quickspec 0.9.6 encounters ambiguous 'total' with 2.10+
+                     , QuickCheck < 2.10
                      , quickspec
                      , tasty >= 0.11.2.1
                      , tasty-quickcheck
                      , text
+                     -- 2.1.5 fails by assuming semigroup pkg
+                     , twee-lib < 2.1.5
+
