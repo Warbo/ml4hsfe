@@ -1,4 +1,5 @@
-{-# LANGUAGE PartialTypeSignatures, OverloadedStrings, DeriveGeneric, BangPatterns #-}
+{-# LANGUAGE BangPatterns, ConstraintKinds, DeriveGeneric, FlexibleContexts,
+             KindSignatures, OverloadedStrings, PartialTypeSignatures, RankNTypes #-}
 module ML4HSFE.Outer where
 
 import           Control.Concurrent
@@ -39,15 +40,20 @@ instance Hashable Name
 instance Hashable Module
 instance Hashable Package
 
+type Clusterer f = (Monad f) => ASTs -> f (Prop ClusterID)
+
 fromRight (Right x) = x
 fromRight (Left  e) = error e
 
-clusterLoop :: LBS.ByteString -> IO ASTs
-clusterLoop s = clusterSCCs asts (fromRight (eitherDecode' sccsStr))
+clusterLoop' :: _ => Clusterer f -> LBS.ByteString -> f ASTs
+clusterLoop' f s = clusterSCCs' f asts (fromRight (eitherDecode' sccsStr))
   where asts    = fromRight (eitherDecode' s)
         sccsStr = order s
 
-clusterLoopT :: _ -> IO ASTs
+clusterLoop :: LBS.ByteString -> IO ASTs
+clusterLoop = clusterLoop' runWeka
+
+clusterLoopT :: ASTs -> IO ASTs
 clusterLoopT s = clusterSCCsT asts sccs
   where asts = s
         sccs = map OD.toIds .
@@ -56,8 +62,11 @@ clusterLoopT s = clusterSCCsT asts sccs
                V.map (fromRight . parseEither parseJSON) $ s
 
 clusterSCCs :: ASTs -> [SCC] -> IO ASTs
-clusterSCCs = foldM go
-  where go asts scc = regularCluster (enableScc asts scc)
+clusterSCCs = clusterSCCs' runWeka
+
+clusterSCCs' :: _ => Clusterer f -> ASTs -> [SCC] -> f ASTs
+clusterSCCs' f = foldM go
+  where go asts scc = regularCluster' f (enableScc asts scc)
 
 clusterSCCsT :: ASTs -> [_] -> IO ASTs
 clusterSCCsT = foldM go
@@ -90,8 +99,9 @@ enableSccT asts s' =
                                 asts)
                          ss
 
-enableMatching :: Name -> Module -> Package -> _ -> _
-enableMatching (N name) (M mod) (P pkg) x' = fromRight . (`parseEither` x') $ withObject "Need object for AST" go
+enableMatching :: Name -> Module -> Package -> Value -> Value
+enableMatching (N name) (M mod) (P pkg) x' =
+    fromRight . (`parseEither` x') . withObject "Need object for AST" $ go
   where go x = do
           n <- x .: "name"
           m <- x .: "module"
@@ -110,8 +120,10 @@ renderAsts = S.toString . encode
 -- these finalised features, then splice the resulting numbers back into the
 -- original asts array (so we can set new values for the features next time)
 regularCluster :: ASTs -> IO ASTs
-regularCluster asts = do clusterNums <- runWeka (setOwnFeatures asts)
-                         return (setClustersFrom asts clusterNums)
+regularCluster = regularCluster' runWeka
+
+regularCluster' :: _ => Clusterer f -> ASTs -> f ASTs
+regularCluster' f asts = setClustersFrom asts <$> f (setOwnFeatures asts)
 
 setOwnFeatures :: ASTs -> ASTs
 setOwnFeatures asts = let clusters = readAsts asts "cluster" (C . unNum)
@@ -119,7 +131,7 @@ setOwnFeatures asts = let clusters = readAsts asts "cluster" (C . unNum)
 
 unNum (Number n) = n
 
-readAsts :: ASTs -> _ -> (Value -> a) -> Prop a
+readAsts :: ASTs -> T.Text -> (Value -> a) -> Prop a
 readAsts asts key f = V.foldl' add HM.empty asts
   where add ps (Object o) = case HM.lookup key o of
           Nothing -> ps
@@ -138,10 +150,12 @@ runWekaCmd = unsafePerformIO $ do
     Just c  -> return c
     Nothing -> return "runWeka"
 
-runWeka :: ASTs -> IO (Prop ClusterID)
-runWeka asts = do
+runWeka :: Clusterer IO
+runWeka asts = toClusters <$> runWeka' asts
+
+runWeka' asts = do
     (stdout, ExitSuccess) <- runCmdStdIO cmd stdin
-    return (toClusters (parse stdout))
+    return (parse stdout)
   where stdin         = encode asts
         cmd           = (proc runWekaCmd []) {
                             std_in  = CreatePipe,
@@ -149,10 +163,11 @@ runWeka asts = do
                             std_err = Inherit
                           }
         parse         = fromRight . eitherDecode'
-        toClusters xs = readAsts xs "cluster" (C . unNum)
+
+toClusters xs = readAsts xs "cluster" (C . unNum)
 
 -- From https://passingcuriosity.com/2015/haskell-reading-process-safe-deadlock
-gatherOutput :: ProcessHandle -> _ -> IO (ExitCode, BS.ByteString)
+gatherOutput :: ProcessHandle -> Handle -> IO (ExitCode, BS.ByteString)
 gatherOutput hProc hOut = work mempty
   where work (!acc) = do
           output <- BS.hGetNonBlocking hOut (64 * 1024)
@@ -206,7 +221,7 @@ setFVFrom clusters (Object f) = Number . (300 +) $ case new of
           (n, m, p) <- getNMP f
           HM.lookup (N n, M m, P p) clusters
 
-findAst :: ASTs -> Name -> Module -> Package -> _ -> Maybe Value
+findAst :: ASTs -> Name -> Module -> Package -> T.Text -> Maybe Value
 findAst asts (N name) (M mod) (P pkg) key = V.find ((/= Nothing) . check) asts
   where check (Object x) = do
           (n, m, p) <- getNMP x
