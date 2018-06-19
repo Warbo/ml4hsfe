@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                ML4HSFE
-version:             0.3.2.0
+version:             0.4.0.0
 synopsis:            ML4PG-like feature extraction for Haskell ASTs
 -- description:
 homepage:            http://chriswarbo.net/git/ml4hsfe
@@ -26,6 +26,7 @@ library
                      , containers >=0.5
                      , hashable
                      , HS2AST
+                     , kmeans == 0.1.3
                      , process
                      , process-extras
                      , QuickCheck

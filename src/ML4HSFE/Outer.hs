@@ -1,5 +1,5 @@
 {-# LANGUAGE BangPatterns, ConstraintKinds, DeriveGeneric, FlexibleContexts,
-             KindSignatures, OverloadedStrings, PartialTypeSignatures, RankNTypes #-}
+             OverloadedStrings, PartialTypeSignatures, RankNTypes #-}
 module ML4HSFE.Outer where
 
 import           Control.Concurrent
@@ -8,8 +8,11 @@ import           Data.Aeson
 import           Data.Aeson.Types
 import qualified Data.ByteString.Char8      as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import qualified Data.Functor.Identity      as I
 import           Data.Hashable
 import qualified Data.HashMap.Strict        as HM
+import qualified Data.KMeans                as K
+import qualified Data.List                  as L
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Scientific            as Sci
@@ -45,7 +48,7 @@ type Clusterer f = (Monad f) => ASTs -> f (Prop ClusterID)
 fromRight (Right x) = x
 fromRight (Left  e) = error e
 
-clusterLoop' :: _ => Clusterer f -> LBS.ByteString -> f ASTs
+clusterLoop' :: Monad f => Clusterer f -> LBS.ByteString -> f ASTs
 clusterLoop' f s = clusterSCCs' f asts (fromRight (eitherDecode' sccsStr))
   where asts    = fromRight (eitherDecode' s)
         sccsStr = order s
@@ -64,11 +67,11 @@ clusterLoopT s = clusterSCCsT asts sccs
 clusterSCCs :: ASTs -> [SCC] -> IO ASTs
 clusterSCCs = clusterSCCs' runWeka
 
-clusterSCCs' :: _ => Clusterer f -> ASTs -> [SCC] -> f ASTs
+clusterSCCs' :: Monad f => Clusterer f -> ASTs -> [SCC] -> f ASTs
 clusterSCCs' f = foldM go
   where go asts scc = regularCluster' f (enableScc asts scc)
 
-clusterSCCsT :: ASTs -> [_] -> IO ASTs
+clusterSCCsT :: ASTs -> [[H.Identifier]] -> IO ASTs
 clusterSCCsT = foldM go
   where go asts scc = regularCluster (enableSccT asts scc)
 
@@ -84,7 +87,7 @@ enableScc asts s' =
           pkg  <- s .: "package"
           return (enableScc (V.map (enableMatching (N name) (M mod) (P pkg)) asts) ss)
 
-enableSccT :: ASTs -> _ -> ASTs
+enableSccT :: ASTs -> [H.Identifier] -> ASTs
 enableSccT asts s' =
     if null s'
        then asts
@@ -122,7 +125,7 @@ renderAsts = S.toString . encode
 regularCluster :: ASTs -> IO ASTs
 regularCluster = regularCluster' runWeka
 
-regularCluster' :: _ => Clusterer f -> ASTs -> f ASTs
+regularCluster' :: Monad f => Clusterer f -> ASTs -> f ASTs
 regularCluster' f asts = setClustersFrom asts <$> f (setOwnFeatures asts)
 
 setOwnFeatures :: ASTs -> ASTs
@@ -130,6 +133,7 @@ setOwnFeatures asts = let clusters = readAsts asts "cluster" (C . unNum)
                        in V.map (setFeaturesFrom clusters) asts
 
 unNum (Number n) = n
+unNum x          = error (show ("Expected 'Number'", x))
 
 readAsts :: ASTs -> T.Text -> (Value -> a) -> Prop a
 readAsts asts key f = V.foldl' add HM.empty asts
@@ -149,6 +153,54 @@ runWekaCmd = unsafePerformIO $ do
   case cmd of
     Just c  -> return c
     Nothing -> return "runWeka"
+
+pureKmeans :: Maybe Int -> Clusterer I.Identity
+pureKmeans cs asts = pure (toClusters (if num == 0 then V.empty else go))
+  where go :: ASTs
+        go = snd (L.foldl' concatClusters
+                           (0, V.empty)
+                           (K.kmeansGen toFeatures clusters getCsv))
+
+        toFeatures :: Value -> [Double]
+        toFeatures (Object o) =
+          case HM.lookupDefault (error "No 'features'") "features" o of
+            Array a -> map (Sci.toRealFloat . unNum) (V.toList a)
+            x       -> error (show ("Got the following 'features'", x))
+
+        concatClusters :: (Int, ASTs) -> [Value] -> (Int, ASTs)
+        concatClusters (n, asts) c =
+          (n+1, asts V.++ V.fromList (map (addCluster n) c))
+
+        addCluster :: Int -> Value -> Value
+        addCluster n (Object o) = Object (HM.insert "cluster"
+                                                    (Number (fromIntegral (n+1)))
+                                                    o)
+
+        inlines :: ASTs
+        inlines = V.filter keep asts
+
+        keep :: Value -> Bool
+        keep (Object o) = HM.member "features" o &&
+                          case HM.lookupDefault (Bool False) "tocluster" o of
+                            Bool b -> b
+        keep _          = False
+
+        num :: Int
+        num = length inlines
+
+        clusters :: Int
+        clusters = fromMaybe (ceiling (sqrt (fromIntegral num / 2))) cs
+
+        getCsv :: [Value]
+        getCsv = filter clusterable (V.toList inlines)
+
+        clusterable x =
+          case x of
+            Object o -> case HM.lookupDefault (Array V.empty) "features" o of
+                          Array a -> not (V.null a)
+                          y       -> error (show ("'features' should be array",
+                                                 y))
+            _        -> error (show ("ASTs should be objects", x))
 
 runWeka :: Clusterer IO
 runWeka asts = toClusters <$> runWeka' asts

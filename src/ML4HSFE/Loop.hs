@@ -24,12 +24,12 @@ featureToVal (Left  i)  = A.Number (fromInteger . toInteger $ i)
 featureToVal (Right id) = fromMaybe (error "Failed to convert ID to JSON value")
                                     (let !x = A.decode (A.encode id) in x)
 
-handle :: Int -> Int -> _ {-BS.ByteString-} -> V.Vector _
+handle :: Int -> Int -> LBS.ByteString -> V.Vector A.Value
 handle w h x = case getAll x of
   Nothing  -> error "Failed to parse array of ASTs"
   Just all -> V.map (A.Object . handleOne w h all . unObject) all
 
-handleString :: Int -> Int -> _ {-BS.ByteString-} -> LBS.ByteString
+handleString :: Int -> Int -> LBS.ByteString -> LBS.ByteString
 handleString w h x = A.encode (handle w h x)
 
 unObject (A.Object o) = o
