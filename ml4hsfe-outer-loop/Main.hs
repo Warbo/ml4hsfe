@@ -11,8 +11,8 @@ main = do rawAsts  <- BS.getContents
           height   <- getEnv "HEIGHT"
           clusters <- lookupEnv "CLUSTERS"
           let asts = I.runIdentity
-                       (clusterLoop' (pureKmeans (read <$> clusters))
-                                     (handleString (read width)
-                                                   (read height)
-                                                   rawAsts))
+                       (clusterLoop (pureKmeans (read <$> clusters))
+                                    (handleString (read width)
+                                                  (read height)
+                                                  rawAsts))
           putStrLn (renderAsts asts)

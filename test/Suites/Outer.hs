@@ -4,6 +4,7 @@ module Suites.Outer where
 
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.Functor.Identity      as I
 import qualified Data.HashMap.Strict        as HM
 import qualified Data.Vector                as V
 import           System.IO.Unsafe
@@ -14,13 +15,11 @@ import           System.Process
 import           Test.Tasty             (testGroup)
 import           Test.Tasty.QuickCheck
 
-tests = testGroup "Outer loop tests" $ if haveRunWeka
-  then [
-      testProperty "Loop contains objects" arrayOfObjects
-    , testProperty "Objects have clusters" objectsHaveClusters
-    , testProperty "Clusters are numbers"  clustersAreNumbers
-    ]
-  else []
+tests = testGroup "Outer loop tests" [
+    testProperty "Loop contains objects" arrayOfObjects
+  , testProperty "Objects have clusters" objectsHaveClusters
+  , testProperty "Clusters are numbers"  clustersAreNumbers
+  ]
 
 arrayOfObjects = all isOb clustered
   where isOb (Object _) = True
@@ -38,22 +37,14 @@ clustersAreNumbers = all clusterIsNum clustered
 
 {-# NOINLINE clustered #-}
 clustered :: [Value]
-clustered = V.toList $ unsafePerformIO $ do
-    asts <- rawAsts
-    let trimmed = case decode asts :: Maybe [Value] of
+clustered = V.toList $ I.runIdentity $ do
+    let trimmed = case decode rawAsts :: Maybe [Value] of
                     Nothing -> error "Failed to trim ASTs"
                     Just l  -> encode . take 100 $ l
-    clusterLoop (handleString width height trimmed)
+    clusterLoop (pureKmeans (Just 5)) (handleString width height trimmed)
   where width  = 30
         height = 30
 
-rawAsts :: IO BS.ByteString
-rawAsts = BS.readFile "examples/ml4hsfe-outer-loop-example-input.json"
-
-{-# NOINLINE haveRunWeka #-}
-haveRunWeka :: Bool
-haveRunWeka = unsafePerformIO $ haveCommand "runWeka"
-
-haveCommand c = do
-  (code, _, _) <- readCreateProcessWithExitCode (shell ("hash " ++ c)) ""
-  return (code == ExitSuccess)
+rawAsts :: BS.ByteString
+rawAsts = unsafePerformIO
+  (BS.readFile "examples/ml4hsfe-outer-loop-example-input.json")

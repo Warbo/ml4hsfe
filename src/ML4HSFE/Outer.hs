@@ -48,15 +48,12 @@ type Clusterer f = (Monad f) => ASTs -> f (Prop ClusterID)
 fromRight (Right x) = x
 fromRight (Left  e) = error e
 
-clusterLoop' :: Monad f => Clusterer f -> LBS.ByteString -> f ASTs
-clusterLoop' f s = clusterSCCs' f asts (fromRight (eitherDecode' sccsStr))
+clusterLoop :: Monad f => Clusterer f -> LBS.ByteString -> f ASTs
+clusterLoop f s = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
   where asts    = fromRight (eitherDecode' s)
         sccsStr = order s
 
-clusterLoop :: LBS.ByteString -> IO ASTs
-clusterLoop = clusterLoop' runWeka
-
-clusterLoopT :: ASTs -> IO ASTs
+clusterLoopT :: ASTs -> I.Identity ASTs
 clusterLoopT s = clusterSCCsT asts sccs
   where asts = s
         sccs = map OD.toIds .
@@ -64,16 +61,13 @@ clusterLoopT s = clusterSCCsT asts sccs
                V.toList     .
                V.map (fromRight . parseEither parseJSON) $ s
 
-clusterSCCs :: ASTs -> [SCC] -> IO ASTs
-clusterSCCs = clusterSCCs' runWeka
+clusterSCCs :: Monad f => Clusterer f -> ASTs -> [SCC] -> f ASTs
+clusterSCCs f = foldM go
+  where go asts scc = regularCluster f (enableScc asts scc)
 
-clusterSCCs' :: Monad f => Clusterer f -> ASTs -> [SCC] -> f ASTs
-clusterSCCs' f = foldM go
-  where go asts scc = regularCluster' f (enableScc asts scc)
-
-clusterSCCsT :: ASTs -> [[H.Identifier]] -> IO ASTs
+clusterSCCsT :: ASTs -> [[H.Identifier]] -> I.Identity ASTs
 clusterSCCsT = foldM go
-  where go asts scc = regularCluster (enableSccT asts scc)
+  where go asts scc = regularCluster (pureKmeans Nothing) (enableSccT asts scc)
 
 enableScc :: ASTs -> SCC -> ASTs
 enableScc asts s' =
@@ -119,14 +113,11 @@ order = OD.process . OD.parse
 renderAsts :: ASTs -> String
 renderAsts = S.toString . encode
 
--- Set the features to whatever cluster numbers appear in asts, run Weka on
+-- Set the features to whatever cluster numbers appear in asts, run clusterer on
 -- these finalised features, then splice the resulting numbers back into the
 -- original asts array (so we can set new values for the features next time)
-regularCluster :: ASTs -> IO ASTs
-regularCluster = regularCluster' runWeka
-
-regularCluster' :: Monad f => Clusterer f -> ASTs -> f ASTs
-regularCluster' f asts = setClustersFrom asts <$> f (setOwnFeatures asts)
+regularCluster :: Monad f => Clusterer f -> ASTs -> f ASTs
+regularCluster f asts = setClustersFrom asts <$> f (setOwnFeatures asts)
 
 setOwnFeatures :: ASTs -> ASTs
 setOwnFeatures asts = let clusters = readAsts asts "cluster" (C . unNum)
@@ -145,14 +136,6 @@ idOf :: Object -> ID
 idOf x = fromJust $ do
   (n, m, p) <- getNMP x
   return (N n, M m, P p)
-
-{-# NOINLINE runWekaCmd #-}
-runWekaCmd :: String
-runWekaCmd = unsafePerformIO $ do
-  cmd <- lookupEnv "RUN_WEKA_CMD"
-  case cmd of
-    Just c  -> return c
-    Nothing -> return "runWeka"
 
 pureKmeans :: Maybe Int -> Clusterer I.Identity
 pureKmeans cs asts = pure (toClusters (if num == 0 then V.empty else go))
@@ -202,43 +185,7 @@ pureKmeans cs asts = pure (toClusters (if num == 0 then V.empty else go))
                                                  y))
             _        -> error (show ("ASTs should be objects", x))
 
-runWeka :: Clusterer IO
-runWeka asts = toClusters <$> runWeka' asts
-
-runWeka' asts = do
-    (stdout, ExitSuccess) <- runCmdStdIO cmd stdin
-    return (parse stdout)
-  where stdin         = encode asts
-        cmd           = (proc runWekaCmd []) {
-                            std_in  = CreatePipe,
-                            std_out = CreatePipe,
-                            std_err = Inherit
-                          }
-        parse         = fromRight . eitherDecode'
-
 toClusters xs = readAsts xs "cluster" (C . unNum)
-
--- From https://passingcuriosity.com/2015/haskell-reading-process-safe-deadlock
-gatherOutput :: ProcessHandle -> Handle -> IO (ExitCode, BS.ByteString)
-gatherOutput hProc hOut = work mempty
-  where work (!acc) = do
-          output <- BS.hGetNonBlocking hOut (64 * 1024)
-          let acc' = acc <> output
-          mCode <- getProcessExitCode hProc
-          case mCode of
-              Nothing -> do
-                  threadDelay 100000  -- 1/10 seconds
-                  work acc'
-              Just code -> do
-                  remaining <- BS.hGetContents hOut
-                  return (code, acc' <> remaining)
-
--- | Runs the given command, piping the given ByteString into stdin, returning
---   stdout and the ExitCode. stderr is inherited.
-runCmdStdIO :: CreateProcess -> LBS.ByteString -> IO (LBS.ByteString, ExitCode)
-runCmdStdIO c i = do (code, sout, serr) <- SBS.readCreateProcessWithExitCode c i
-                     LBS.hPut stderr serr
-                     return (sout, code)
 
 setClustersFrom :: ASTs -> Prop ClusterID -> ASTs
 setClustersFrom into from = V.map (`setClusterFrom` from) into

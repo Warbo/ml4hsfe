@@ -9,12 +9,11 @@ function fail {
     exit 1
 }
 
-command -v jq      || fail "No jq executable found"
-command -v runWeka || fail "No runWeka executable found"
+command -v jq   || fail "No jq executable found"
 
 cabal new-build || fail "Couldn't build"
 
-cabal new-test || fail "Tests failed"
+cabal new-test  || fail "Tests failed"
 
 # Test ml4hsfe-outer-loop on examples
 
