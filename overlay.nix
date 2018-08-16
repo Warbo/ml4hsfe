@@ -44,19 +44,29 @@ with {
 
         # Ourselves
 
-        ML4HSFE = helf.callPackage
-          (helf.haskellSrc2nix {
-            name = "ML4HSFE";
-            src  = filterSource
-              (path: _:
-                with rec {
-                  unwanted = [ ".git" "asv.conf.json" "benchmarks" "dist"
-                               "dist-newstyle" "result" ];
-                  isNix    = self.lib.hasSuffix ".nix" path;
-                };
-                !(elem (baseNameOf path) unwanted || isNix))
-              ./.;
-          }) {};
+        ML4HSFE =
+          with rec {
+            pkg = helf.callPackage
+              (helf.haskellSrc2nix {
+                name = "ML4HSFE";
+                src  = filterSource
+                  (path: _:
+                    with rec {
+                      unwanted = [ ".git" "asv.conf.json" "benchmarks" "dist"
+                                   "dist-newstyle" "result" ];
+                      isNix    = self.lib.hasSuffix ".nix" path;
+                    };
+                    !(elem (baseNameOf path) unwanted || isNix))
+                  ./.;
+              }) {};
+
+            profiled = self.haskell.lib.overrideCabal pkg (drv: {
+              configureFlags            = [ "--ghc-option=-rtsopts" ];
+              enableExecutableProfiling = true;
+              enableLibraryProfiling    = true;
+            });
+          };
+          if profile then profiled else pkg;
     });
   });
 };
