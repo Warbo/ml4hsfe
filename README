@@ -1,0 +1,36 @@
+# Machine Learning for Haskell - Feature Extraction #
+
+This repository provides a *recurrent clustering* algorithm, which assigns
+feature vectors to Haskell Core syntax trees. This works by turning the tree
+structure into a (left-biased) matrix then concatenating the rows. Each symbol
+in the tree is given a number (feature): keywords use hard-coded numbers, whilst
+names are dereferenced to get *their* syntax trees, grouped into clusters based
+on the features of those trees, and the index of the cluster is used as the
+feature.
+
+## Layout ##
+
+This is a normal Haskell project using the Cabal build system. We also provide
+definitions for the Nix package manager and a benchmark suite for the Airspeed
+Velocity (ASV) framework (using the `asv-nix` plugin).
+
+ - `asv.conf.json` is the Airspeed Velocity configuration. It sets up the
+   benchmark suite in `benchmarks/`
+
+ - `benchmarks/` defines our benchmarks. The `default.nix` file will be loaded
+   for each git revision, and defines a `python` executable whose environment
+   contains values, commands, etc. from that revision for use by the benchmark
+   scripts (the `*.py` files).
+
+ - `overlay.nix` is a Nix overlay, providing (among other things) a Haskell
+   package set containing this `ML4HSFE` package, a standalone `ML4HSFE` package
+   taken from that set and an instantiation of the `test.nix` tests.
+
+ - `overlayed.nix` applies our overlay to a pinned version of Nixpkgs. This
+   should work regardless of what version your system provides.
+
+ - `release.nix` chooses those packages from `overlayed.nix` which we want to
+   build and provide via continuous integration.
+
+ - `tests.nix` contains some integration tests which can't be run from the
+   Cabal test suite.
