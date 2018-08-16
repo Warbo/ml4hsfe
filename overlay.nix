@@ -93,7 +93,7 @@ with {
     ''
       mkdir "$out"
       cd "$out"
-      ml4hsfe-outer-loop +RTS -hy -RTS < "$example" > output.json
+      ml4hsfe-outer-loop +RTS -hy -i0.01 -RTS < "$example" > output.json
       "${self.hsPkgs.ghc}/bin/hp2ps" < *.hp > heap.ps
       ps2pdf heap.ps
     '';
