@@ -46,19 +46,7 @@ with {
 
         ML4HSFE =
           with rec {
-            pkg = helf.callPackage
-              (helf.haskellSrc2nix {
-                name = "ML4HSFE";
-                src  = filterSource
-                  (path: _:
-                    with rec {
-                      unwanted = [ ".git" "asv.conf.json" "benchmarks" "dist"
-                                   "dist-newstyle" "README" "result" ];
-                      isNix    = self.lib.hasSuffix ".nix" path;
-                    };
-                    !(elem (baseNameOf path) unwanted || isNix))
-                  ./.;
-              }) {};
+            pkg = helf.callPackage (import ./derivation.nix) {};
 
             profiled = self.haskell.lib.overrideCabal pkg (drv: {
               configureFlags = [
