@@ -8,8 +8,8 @@
 
 with builtins;
 with {
-  fixed    = import "${dir }";
-  measured = import "${root}";
+  fixed    = import "${dir }/overlayed.nix";
+  measured = import "${root}/overlayed.nix";
 };
 
 # Use 'paths' and 'vars' to pass things from 'measured' to the benchmark scripts

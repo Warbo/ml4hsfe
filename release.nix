@@ -1,13 +1,4 @@
-with rec {
-  sysPkgs = import <nixpkgs> { overlays = [ (import ./overlay.nix) ]; };
-
-  helpers = import sysPkgs.helpersSrc;
-
-  pinned  = import helpers.repo1803 { overlays = [
-    (import "${sysPkgs.helpersSrc}/overlay.nix")
-    (import ./overlay.nix)
-  ]; };
-};
+# Picks derivations from ./overlayed.nix that should be run on build servers
 {
-  inherit (pinned) ML4HSFE ml4hsfe-tests;
+  inherit (import ./overlayed.nix) ML4HSFE ml4hsfe-tests;
 }
