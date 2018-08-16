@@ -16,7 +16,7 @@ with {
 fixed.mkBin {
   name   = "python";
   paths  = with fixed; [ (python3.withPackages (p: [])) ];
-  vars   = {};
+  vars   = { profiled = "${measured.memoryProfile}/heap.hp"; };
   script = ''
     #!/usr/bin/env bash
     exec python3 "$@"

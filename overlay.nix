@@ -86,21 +86,27 @@ with {
   memoryProfile = self.runCommand "ml4hsfe-memory-profile"
     {
       buildInputs = [ self.ghostscript self.hsProfiled.ML4HSFE ];
-      example     = ./examples/ml4hsfe-outer-loop-example-input-large.json;
-      HEIGHT      = "10";
-      WIDTH       = "10";
+
+      # We use a "large" example (taken from Theory Exploration Benchmark) since
+      # the smaller example runs too fast to get heap samples
+      example = ./examples/ml4hsfe-outer-loop-example-input-large.json;
+
+      # These need to be set or ml4hsfe-outer-loop will abort
+      HEIGHT = "10";
+      WIDTH  = "10";
     }
     ''
       mkdir "$out"
       cd "$out"
 
-      # Measure and graph heap usage (spots space leaks)
+      # Spot space leaks my measuring heap usage; produces ml4hsfe-outer-loop.hp
       ml4hsfe-outer-loop +RTS -hy -i0.01 -RTS < "$example"
-      "${self.hsPkgs.ghc}/bin/hp2ps" < *.hp > heap.ps
-      ps2pdf heap.ps
+      mv *.hp heap.hp
 
-      # Generate a JSON report which we can parse in benchmarks
-      ml4hsfe-outer-loop +RTS -pj -RTS < "$example"
+      # Plot heap usage for easier debugging. GHC can plot as PostScript, then
+      # we use GhostScript to convert to PDF.
+      "${self.hsPkgs.ghc}/bin/hp2ps" < heap.hp > heap.ps
+      ps2pdf heap.ps
     '';
 
   inherit (self.hsPkgs) ML4HSFE;
