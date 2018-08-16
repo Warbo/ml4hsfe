@@ -85,6 +85,8 @@ with {
     {
       buildInputs = [ self.ghostscript self.hsProfiled.ML4HSFE ];
       example     = ./examples/ml4hsfe-outer-loop-example-input.json;
+      HEIGHT      = "10";
+      WIDTH       = "10";
     }
     ''
       mkdir "$out"
