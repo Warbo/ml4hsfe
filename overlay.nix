@@ -93,9 +93,14 @@ with {
     ''
       mkdir "$out"
       cd "$out"
-      ml4hsfe-outer-loop +RTS -hy -i0.01 -RTS < "$example" > output.json
+
+      # Measure and graph heap usage (spots space leaks)
+      ml4hsfe-outer-loop +RTS -hy -i0.01 -RTS < "$example"
       "${self.hsPkgs.ghc}/bin/hp2ps" < *.hp > heap.ps
       ps2pdf heap.ps
+
+      # Generate a JSON report which we can parse in benchmarks
+      ml4hsfe-outer-loop +RTS -pj -RTS < "$example"
     '';
 
   inherit (self.hsPkgs) ML4HSFE;
