@@ -105,7 +105,7 @@ with {
 
       # Plot heap usage for easier debugging. GHC can plot as PostScript, then
       # we use GhostScript to convert to PDF.
-      "${self.hsPkgs.ghc}/bin/hp2ps" < heap.hp > heap.ps
+      "${self.hsPkgs.ghc}/bin/hp2ps" -c < heap.hp > heap.ps
       ps2pdf heap.ps
     '';
 
