@@ -70,19 +70,15 @@ clusterSCCsT = foldM go
   where go asts scc = regularCluster (pureKmeans Nothing) (enableSccT asts scc)
 
 enableScc :: ASTs -> SCC -> ASTs
-enableScc !asts !s' =
-    if V.null s'
-       then asts
-       else case parseEither enableInTail (V.head s') of
-              Left  _      -> error "Failed to enable SCC"
-              Right !asts' -> asts'
-  where !enableInTail = withObject "Non-object in SCC" (enable (V.tail s'))
-        enable !ss s = do
-          !name <- s .: "name"
-          !mod  <- s .: "module"
-          !pkg  <- s .: "package"
-          return $! recurse (enableMatching (N name) (M mod) (P pkg)) ss
-        recurse f = let !asts' = V.map f asts in enableScc asts'
+enableScc !asts s' =
+  if V.null s'
+     then asts
+     else let Object !s  = V.head s'
+              Just (String !name) = HM.lookup "name"    s
+              Just (String !mod ) = HM.lookup "module"  s
+              Just (String !pkg ) = HM.lookup "package" s
+              f          = enableMatching (N name) (M mod) (P pkg)
+           in enableScc (V.map f asts) (V.tail s')
 
 enableSccT :: ASTs -> [H.Identifier] -> ASTs
 enableSccT asts s' =
