@@ -87,6 +87,7 @@ with {
     {
       buildInputs = [ self.ghostscript self.hsProfiled.ML4HSFE ];
       example     = ./examples/ml4hsfe-outer-loop-example-input.json;
+      example     = ./examples/ml4hsfe-outer-loop-example-input-large.json;
       HEIGHT      = "10";
       WIDTH       = "10";
     }
