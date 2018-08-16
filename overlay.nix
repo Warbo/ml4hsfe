@@ -53,7 +53,7 @@ with {
                   (path: _:
                     with rec {
                       unwanted = [ ".git" "asv.conf.json" "benchmarks" "dist"
-                                   "dist-newstyle" "result" ];
+                                   "dist-newstyle" "README" "result" ];
                       isNix    = self.lib.hasSuffix ".nix" path;
                     };
                     !(elem (baseNameOf path) unwanted || isNix))
