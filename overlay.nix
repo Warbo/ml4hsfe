@@ -88,7 +88,7 @@ with {
       cd "$out"
 
       # Spot space leaks my measuring heap usage; produces ml4hsfe-outer-loop.hp
-      ml4hsfe-outer-loop +RTS -hc -i0.01 -L100 -RTS < "$example"
+      ml4hsfe-outer-loop +RTS -hc -i0.01 -L100 -RTS < "$example" > /dev/null
       mv *.hp heap.hp
 
       # Plot heap usage for easier debugging. GHC can plot as PostScript, then
