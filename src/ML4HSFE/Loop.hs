@@ -3,6 +3,7 @@ module ML4HSFE.Loop where
 
 -- Top-level loop for processing ASTs. We use Haskell since jq+bash is slow.
 
+import qualified Control.DeepSeq            as DS
 import qualified Data.Aeson                 as A
 import qualified Data.ByteString.Char8      as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
@@ -16,13 +17,17 @@ import           ML4HSFE.Types
 
 getAll x = A.decode {-Strict-} x :: Maybe A.Array
 
-ml4hsfe :: Int -> Int -> BS.ByteString -> BS.ByteString -> [BS.ByteString] -> LBS.ByteString -> A.Array
-ml4hsfe w h mod pkg names rawAst = V.map featureToVal (V.fromList (processVal w h mod pkg names (LBS.toStrict rawAst)))
+ml4hsfe :: Int -> Int -> BS.ByteString -> BS.ByteString
+        -> [BS.ByteString] -> LBS.ByteString -> A.Array
+ml4hsfe w h mod pkg names rawAst = DS.force vec
+  where rawAst'   = LBS.toStrict rawAst
+        processed = processVal w h mod pkg names rawAst'
+        vec       = V.map featureToVal (V.fromList processed)
 
 featureToVal :: Feature -> A.Value
-featureToVal (Left  i)  = A.Number (fromInteger . toInteger $ i)
+featureToVal (Left  i)  = DS.force (A.Number (fromInteger . toInteger $ i))
 featureToVal (Right id) = fromMaybe (error "Failed to convert ID to JSON value")
-                                    (let !x = A.decode (A.encode id) in x)
+                                    (DS.force (A.decode (A.encode id)))
 
 handle :: Int -> Int -> LBS.ByteString -> V.Vector A.Value
 handle w h x = case getAll x of
@@ -44,8 +49,9 @@ unString' = S.toString . unString
 unBS = TE.encodeUtf8 . unString
 
 handleOne :: Int -> Int -> A.Array -> A.Object -> A.Object
-handleOne w h xs x = HM.insert "features" (A.Array features) x
-  where features = ml4hsfe w h (unBS mod) (unBS pkg) names' (LBS.fromStrict (unBS ast))
+handleOne !w !h !xs !x = DS.force (HM.insert "features" (A.Array features) x)
+  where features = ml4hsfe w h (unBS mod) (unBS pkg) names'
+                           (LBS.fromStrict (unBS ast))
         Just ast = HM.lookup "ast"     x
         Just mod = HM.lookup "module"  x
         Just pkg = HM.lookup "package" x
