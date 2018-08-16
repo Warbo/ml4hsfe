@@ -49,9 +49,9 @@ fromRight (Right x) = x
 fromRight (Left  e) = error e
 
 clusterLoop :: Monad f => Clusterer f -> LBS.ByteString -> f ASTs
-clusterLoop f s = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
-  where asts    = fromRight (eitherDecode' s)
-        sccsStr = order s
+clusterLoop f !s = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
+  where !asts    = fromRight (eitherDecode' s)
+        !sccsStr = order s
 
 clusterLoopT :: ASTs -> I.Identity ASTs
 clusterLoopT s = clusterSCCsT asts sccs
@@ -63,23 +63,26 @@ clusterLoopT s = clusterSCCsT asts sccs
 
 clusterSCCs :: Monad f => Clusterer f -> ASTs -> [SCC] -> f ASTs
 clusterSCCs f = foldM go
-  where go asts scc = regularCluster f (enableScc asts scc)
+  where go !asts !scc = regularCluster f (enableScc asts scc)
 
 clusterSCCsT :: ASTs -> [[H.Identifier]] -> I.Identity ASTs
 clusterSCCsT = foldM go
   where go asts scc = regularCluster (pureKmeans Nothing) (enableSccT asts scc)
 
 enableScc :: ASTs -> SCC -> ASTs
-enableScc asts s' =
+enableScc !asts !s' =
     if V.null s'
        then asts
-       else fromRight . (`parseEither` V.head s') $ withObject "Non-object in SCC"
-                                                               (enable (V.tail s'))
-  where enable ss s = do
-          name <- s .: "name"
-          mod  <- s .: "module"
-          pkg  <- s .: "package"
-          return (enableScc (V.map (enableMatching (N name) (M mod) (P pkg)) asts) ss)
+       else case parseEither enableInTail (V.head s') of
+              Left  _      -> error "Failed to enable SCC"
+              Right !asts' -> asts'
+  where !enableInTail = withObject "Non-object in SCC" (enable (V.tail s'))
+        enable !ss s = do
+          !name <- s .: "name"
+          !mod  <- s .: "module"
+          !pkg  <- s .: "package"
+          return $! recurse (enableMatching (N name) (M mod) (P pkg)) ss
+        recurse f = enableScc (V.map f asts)
 
 enableSccT :: ASTs -> [H.Identifier] -> ASTs
 enableSccT asts s' =
@@ -97,15 +100,16 @@ enableSccT asts s' =
                          ss
 
 enableMatching :: Name -> Module -> Package -> Value -> Value
-enableMatching (N name) (M mod) (P pkg) x' =
-    fromRight . (`parseEither` x') . withObject "Need object for AST" $ go
-  where go x = do
+enableMatching (N name) (M mod) (P pkg) !x' = result
+  where result@(Object !hm) = fromRight . (`parseEither` x')
+                                        . withObject "Need object for AST" $ go
+        go x = do
           n <- x .: "name"
           m <- x .: "module"
           p <- x .: "package"
-          return . Object $ if n == name && m == mod && p == pkg
-                      then HM.insert "tocluster" (Bool True) x
-                      else x
+          return $! Object (if n == name && m == mod && p == pkg
+                               then HM.insert "tocluster" (Bool True) x
+                               else x)
 
 order :: LBS.ByteString -> LBS.ByteString
 order = OD.process . OD.parse
@@ -117,7 +121,9 @@ renderAsts = S.toString . encode
 -- these finalised features, then splice the resulting numbers back into the
 -- original asts array (so we can set new values for the features next time)
 regularCluster :: Monad f => Clusterer f -> ASTs -> f ASTs
-regularCluster f asts = setClustersFrom asts <$> f (setOwnFeatures asts)
+regularCluster f asts = do
+  !clusters <- f (setOwnFeatures asts)
+  pure $! setClustersFrom asts clusters
 
 setOwnFeatures :: ASTs -> ASTs
 setOwnFeatures asts = let clusters = readAsts asts "cluster" (C . unNum)
@@ -188,20 +194,21 @@ pureKmeans cs asts = pure (toClusters (if num == 0 then V.empty else go))
 toClusters xs = readAsts xs "cluster" (C . unNum)
 
 setClustersFrom :: ASTs -> Prop ClusterID -> ASTs
-setClustersFrom into from = V.map (`setClusterFrom` from) into
+setClustersFrom !into from = let !v = V.map (`setClusterFrom` from) into
+                              in v
 
 setClusterFrom :: Value -> Prop ClusterID -> Value
-setClusterFrom (Object ast) clusters = Object $ case go of
-    Nothing    -> ast
-    Just (C c) -> HM.insert "cluster" (Number c) ast
-  where go = do
-          (n, m, p) <- getNMP ast
-          HM.lookup (N n, M m, P p) clusters
+setClusterFrom (Object !ast) clusters = Object ast'
+  where !ast' = case go of
+                  Nothing     -> ast
+                  Just (C !c) -> HM.insert "cluster" (Number c) ast
+        go = do (n, m, p) <- getNMP ast
+                HM.lookup (N n, M m, P p) clusters
 
-getNMP x = do String n <- HM.lookup "name"    x
-              String m <- HM.lookup "module"  x
-              String p <- HM.lookup "package" x
-              return (n, m, p)
+getNMP x = do String !n <- HM.lookup "name"    x
+              String !m <- HM.lookup "module"  x
+              String !p <- HM.lookup "package" x
+              return $! (n, m, p)
 
 setFeaturesFrom :: Prop ClusterID -> Value -> Value
 setFeaturesFrom clusters (Object ast) =
