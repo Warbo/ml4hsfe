@@ -48,9 +48,9 @@ group :: [ASTId] -> [SCC Atom]
 group = bigSCCs . map extractGraphable
 
 bigSCCs :: [(Atom, Atom, [Atom])] -> [SCC Atom]
-bigSCCs as = case nextSCC as of
+bigSCCs !as = case nextSCC as of
   Nothing -> []
-  Just y  -> y : bigSCCs (removeAtoms (sccAtoms y) as)
+  Just !y -> y : bigSCCs (removeAtoms (sccAtoms y) as)
 
 sccAtoms :: SCC Atom -> [Atom]
 sccAtoms = flattenSCC
@@ -69,7 +69,7 @@ depLess = filter (null . sccDeps)
 nextSCC :: [(Atom, Atom, [Atom])] -> Maybe (SCC Atom)
 nextSCC [] = Nothing
 nextSCC as = forgetAtoms <$> combineSCCs sccs
-  where sccs = depLess (stronglyConnCompR (stripUnknownDeps as))
+  where sccs = depLess $! (stronglyConnCompR $! stripUnknownDeps as)
 
 combineSCCs :: [SCC a] -> Maybe (SCC a)
 combineSCCs ss = case ss of
