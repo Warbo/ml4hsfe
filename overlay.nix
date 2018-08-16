@@ -36,11 +36,11 @@ with {
         # Nix overrides
 
         # Test suite dependencies clash
-        aeson = super.haskell.lib.dontCheck huper.aeson;
+        aeson = self.haskell.lib.dontCheck huper.aeson;
 
         # This requires semigroups if GHC < 8, but was generated using GHC 8
-        system-filepath = super.haskell.lib.addBuildDepend huper.system-filepath
-                                                           helf.semigroups;
+        system-filepath = self.haskell.lib.addBuildDepend huper.system-filepath
+                                                          helf.semigroups;
 
         # Ourselves
 
