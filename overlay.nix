@@ -71,6 +71,19 @@ with {
 
   hsProfiled = mkHs { profile = true; };
 
+  memoryProfile = self.runCommand "ml4hsfe-memory-profile"
+    {
+      buildInputs = [ self.ghostscript self.hsProfiled.ML4HSFE ];
+      example     = ./examples/ml4hsfe-outer-loop-example-input.json;
+    }
+    ''
+      mkdir "$out"
+      cd "$out"
+      ml4hsfe-outer-loop +RTS -hy -RTS < "$example" > output.json
+      "${self.hsPkgs.ghc}/bin/hp2ps" < *.hp > heap.ps
+      ps2pdf heap.ps
+    '';
+
   inherit (self.hsPkgs) ML4HSFE;
 
   # Force system's Nix, to ensure compatibility with whatever's running us
