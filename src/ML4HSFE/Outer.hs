@@ -82,7 +82,7 @@ enableScc !asts !s' =
           !mod  <- s .: "module"
           !pkg  <- s .: "package"
           return $! recurse (enableMatching (N name) (M mod) (P pkg)) ss
-        recurse f = enableScc (V.map f asts)
+        recurse f = let !asts' = V.map f asts in enableScc asts'
 
 enableSccT :: ASTs -> [H.Identifier] -> ASTs
 enableSccT asts s' =
@@ -100,16 +100,17 @@ enableSccT asts s' =
                          ss
 
 enableMatching :: Name -> Module -> Package -> Value -> Value
-enableMatching (N name) (M mod) (P pkg) !x' = result
+enableMatching (N !name) (M !mod) (P !pkg) !x' = result
   where result@(Object !hm) = fromRight . (`parseEither` x')
                                         . withObject "Need object for AST" $ go
-        go x = do
+        go !x = do
           n <- x .: "name"
           m <- x .: "module"
           p <- x .: "package"
-          return $! Object (if n == name && m == mod && p == pkg
-                               then HM.insert "tocluster" (Bool True) x
-                               else x)
+          let !o = if n == name && m == mod && p == pkg
+                      then HM.insert "tocluster" (Bool True) x
+                      else x
+          return $! Object o
 
 order :: LBS.ByteString -> LBS.ByteString
 order = OD.process . OD.parse
