@@ -96,7 +96,10 @@ processVal c r mod pkg names rawAst =
       vec          = featureVec c r exp
    in vec
 
-process :: Int -> Int -> BS.ByteString -> BS.ByteString -> [_] -> BS.ByteString -> BS.ByteString
+process :: Int             -> Int
+        ->  BS.ByteString  -> BS.ByteString
+        -> [BS.ByteString] -> BS.ByteString
+        ->  BS.ByteString
 process c r mod pkg names rawAst = renderVector (processVal c r mod pkg names rawAst)
 
 qualifyAst mod pkg names = qualifyMod mod pkg names . unwrapAst
