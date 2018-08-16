@@ -75,4 +75,6 @@ with {
 
   # Force system's Nix, to ensure compatibility with whatever's running us
   inherit (import <nixpkgs> {}) nix;
+
+  ml4hsfe-tests = self.callPackage ./tests.nix {};
 }

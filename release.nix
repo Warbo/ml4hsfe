@@ -9,5 +9,5 @@ with rec {
   ]; };
 };
 {
-  inherit (pinned) ML4HSFE;
+  inherit (pinned) ML4HSFE ml4hsfe-tests;
 }
