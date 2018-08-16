@@ -61,7 +61,9 @@ with {
               }) {};
 
             profiled = self.haskell.lib.overrideCabal pkg (drv: {
-              configureFlags            = [ "--ghc-option=-rtsopts" ];
+              configureFlags = [
+                "--ghc-option=-rtsopts" "--ghc-option=-auto-all"
+              ];
               enableExecutableProfiling = true;
               enableLibraryProfiling    = true;
             });
