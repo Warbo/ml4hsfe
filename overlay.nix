@@ -69,6 +69,7 @@ with {
 
   hsPkgs = mkHs {};
 
+  hsProfiled = mkHs { profile = true; };
 
   inherit (self.hsPkgs) ML4HSFE;
 
