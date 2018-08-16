@@ -25,9 +25,9 @@ ml4hsfe w h mod pkg names rawAst = DS.force vec
         vec       = V.map featureToVal (V.fromList processed)
 
 featureToVal :: Feature -> A.Value
-featureToVal (Left  i)  = DS.force (A.Number (fromInteger . toInteger $ i))
-featureToVal (Right id) = fromMaybe (error "Failed to convert ID to JSON value")
-                                    (DS.force (A.decode (A.encode id)))
+featureToVal (Left  !i)  = DS.force (A.Number (fromInteger . toInteger $ i))
+featureToVal (Right !id) = fromMaybe (error "Failed to convert ID to JSON value")
+                                     (DS.force (A.decode (A.encode id)))
 
 handle :: Int -> Int -> LBS.ByteString -> V.Vector A.Value
 handle w h x = case getAll x of
