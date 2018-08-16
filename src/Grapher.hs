@@ -20,19 +20,25 @@ toIds (AcyclicSCC a)  = [atomToId a]
 toIds (CyclicSCC  as) = map atomToId as
 
 renderAll :: [SCC Atom] -> B.ByteString
-renderAll = encode . map toIds
+renderAll !l = let !bs = encode (map toIds l)
+                in bs
 
 -- Handles the case of the Json Key being a Maybe [ASTId]
 extractAtoms :: [Identifier] -> [Atom]
-extractAtoms = map (\x -> (idName x, idModule x, idPackage x))
+extractAtoms !l = map (\x -> let !n = idName    x
+                                 !m = idModule  x
+                                 !p = idPackage x
+                              in (n, m, p))
+                      l
 
 -- Turns a Json object into a tuple that's acceptable by graphFromEdges
 extractGraphable :: ASTId -> (Atom , Atom, [Atom])
-extractGraphable x = let n = aName    x
-                         m = aModule  x
-                         p = aPackage x
-                         d = aDeps    x
-                      in ((n,m,p), (n,m,p), extractAtoms d)
+extractGraphable x = let !n = aName    x
+                         !m = aModule  x
+                         !p = aPackage x
+                         !d = aDeps    x
+                         !a = extractAtoms d
+                      in ((n,m,p), (n,m,p), a)
 
 injectGraphable :: (Atom, Atom, [Atom]) -> ASTId
 injectGraphable (a, _, as) = ASTId { aId   = atomToId a,
@@ -101,7 +107,7 @@ depAtoms :: (Atom, Atom, [Atom]) -> [Atom]
 depAtoms (_, _, ds) = ds
 
 process :: [ASTId] -> B.ByteString
-process = renderAll . group
+process !l = renderAll $! group l
 
 atomToId (n, m, p) = ID { idPackage = p, idModule = m, idName = n }
 
