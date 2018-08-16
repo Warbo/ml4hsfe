@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ML4HSFE.Parse where
 
+import qualified Control.DeepSeq as DS
 import qualified Data.AttoLisp   as L
 import           Data.Char
 import qualified Data.Text       as T
@@ -33,7 +34,7 @@ qualifyMod mod pkg names x = case x of
   _ -> x
 
 readExpr :: AST -> Maybe Expr
-readExpr = readExpr' . unwrapAst
+readExpr = DS.force . readExpr' . unwrapAst
 
 readExpr' ast = case ast of
   -- Happy cases
