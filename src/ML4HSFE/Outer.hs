@@ -3,6 +3,7 @@
 module ML4HSFE.Outer where
 
 import           Control.Concurrent
+import qualified Control.DeepSeq            as DS
 import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Types
@@ -77,7 +78,7 @@ toClusters = V.foldl' add HM.empty
 enableScc :: ASTs -> SCC -> ASTs
 enableScc = L.foldl' go
   where go :: ASTs -> H.Identifier -> ASTs
-        go !asts i = V.map (enableMatching i) asts
+        go !asts i = DS.force (V.map (enableMatching i) asts)
 
 enableMatching :: H.Identifier -> Ty.Entry -> Ty.Entry
 enableMatching i x = if i == Ty.entryId x

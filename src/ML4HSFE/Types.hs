@@ -7,6 +7,7 @@ import           Control.DeepSeq (($!!), deepseq, force, NFData, rnf)
 import qualified Data.Vector     as V
 import qualified Data.Text       as T
 import           HS2AST.Types
+import qualified Types           as Ty
 
 data Entry = Entry {
   entryId        :: !Identifier,
@@ -23,6 +24,12 @@ instance A.ToJSON Entry where
           c  = case entryCluster e of
                  Nothing -> []
                  Just n  -> ["cluster" A..= n]
+
+instance NFData Entry where
+  rnf e = entryId        e `deepseq`
+          entryCluster   e `deepseq`
+          entryToCluster e `deepseq`
+          entryFeatures  e `deepseq` ()
 
 data RoseTree = Node !Feature ![RoseTree] deriving (Show)
 
