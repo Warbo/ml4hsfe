@@ -44,24 +44,23 @@ instance Hashable Name
 instance Hashable Module
 instance Hashable Package
 
-type Clusterer f = (Monad f) => ASTs -> f (Prop ClusterID)
+type Clusterer = ASTs -> Prop ClusterID
 
 fromRight (Right x) = x
 fromRight (Left  e) = error e
 
-clusterLoop :: Monad f => Clusterer f -> ASTs -> f ASTs
+clusterLoop :: Clusterer -> ASTs -> ASTs
 clusterLoop f !asts = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
   where !sccsStr = case fromJSON (Array asts) of
                      Error   msg -> error msg
                      Success ids -> OD.process ids
 
-clusterSCCs :: Monad f => Clusterer f -> ASTs -> [SCC] -> f ASTs
+clusterSCCs :: Clusterer -> ASTs -> [SCC] -> ASTs
 clusterSCCs f = go
-  where go !asts []          = pure asts
-        go !asts (!scc:sccs) = do
-          !asts' <- regularCluster f (enableScc asts scc)
-          go asts' sccs
-
+  where go !asts []          = asts
+        go !asts (!scc:sccs) =
+          let !asts' = regularCluster f (enableScc asts scc)
+           in go asts' sccs
 
 enableScc :: ASTs -> SCC -> ASTs
 enableScc !asts s' =
@@ -96,11 +95,10 @@ renderAsts = S.toString . encode
 -- Set the features to whatever cluster numbers appear in asts, run clusterer on
 -- these finalised features, then splice the resulting numbers back into the
 -- original asts array (so we can set new values for the features next time)
-regularCluster :: Monad f => Clusterer f -> ASTs -> f ASTs
-regularCluster f !asts = do
-    !clusters <- f withFeatures
-    pure $! setClustersFrom asts clusters
+regularCluster :: Clusterer -> ASTs -> ASTs
+regularCluster f !asts = setClustersFrom asts clusters
   where !withFeatures = setOwnFeatures asts
+        !clusters     = f withFeatures
 
 setOwnFeatures :: ASTs -> ASTs
 setOwnFeatures !asts = let clusters = readAsts asts "cluster" (C . unNum)
@@ -120,8 +118,8 @@ idOf x = fromJust $ do
   (!n, !m, !p) <- getNMP x
   return $! (N n, M m, P p)
 
-pureKmeans :: Maybe Int -> Clusterer I.Identity
-pureKmeans cs asts = pure (toClusters (if num == 0 then V.empty else go))
+pureKmeans :: Maybe Int -> Clusterer
+pureKmeans cs asts = toClusters (if num == 0 then V.empty else go)
   where go :: ASTs
         go = snd (L.foldl' concatClusters
                            (0, V.empty)
@@ -220,6 +218,5 @@ outerMain = do
   height   <- getEnv "HEIGHT"
   clusters <- lookupEnv "CLUSTERS"
   let asts  = Loop.handle (read width) (read height) rawAsts
-      asts' = I.runIdentity
-                (clusterLoop (pureKmeans (read <$> clusters)) asts)
+      asts' = clusterLoop (pureKmeans (read <$> clusters)) asts
   putStrLn (renderAsts asts')

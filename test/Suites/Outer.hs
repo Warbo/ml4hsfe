@@ -37,13 +37,13 @@ clustersAreNumbers = all clusterIsNum clustered
 
 {-# NOINLINE clustered #-}
 clustered :: [Value]
-clustered = V.toList $ I.runIdentity $ do
-    let trimmed = case decode rawAsts of
+clustered = V.toList (clusterLoop (pureKmeans (Just 5))
+                                  (handle width height trimmed))
+  where width   = 30
+        height  = 30
+        trimmed = case decode rawAsts of
                     Nothing -> error "Failed to trim ASTs"
                     Just l  -> encode . take 100 $ (l :: [Value])
-    clusterLoop (pureKmeans (Just 5)) (handle width height trimmed)
-  where width  = 30
-        height = 30
 
 rawAsts :: BS.ByteString
 rawAsts = unsafePerformIO
