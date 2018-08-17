@@ -115,16 +115,17 @@ renderAsts = S.toString . encode
 -- these finalised features, then splice the resulting numbers back into the
 -- original asts array (so we can set new values for the features next time)
 regularCluster :: Monad f => Clusterer f -> ASTs -> f ASTs
-regularCluster f asts = do
-  !clusters <- f (setOwnFeatures asts)
-  pure $! setClustersFrom asts clusters
+regularCluster f !asts = do
+    !clusters <- f withFeatures
+    pure $! setClustersFrom asts clusters
+  where !withFeatures = setOwnFeatures asts
 
 setOwnFeatures :: ASTs -> ASTs
-setOwnFeatures asts = let clusters = readAsts asts "cluster" (C . unNum)
-                       in V.map (setFeaturesFrom clusters) asts
+setOwnFeatures !asts = let clusters = readAsts asts "cluster" (C . unNum)
+                        in V.map (setFeaturesFrom clusters) asts
 
-unNum (Number n) = n
-unNum x          = error (show ("Expected 'Number'", x))
+unNum (Number !n) = n
+unNum x           = error (show ("Expected 'Number'", x))
 
 readAsts :: ASTs -> T.Text -> (Value -> a) -> Prop a
 readAsts asts key f = V.foldl' add HM.empty asts
@@ -134,8 +135,8 @@ readAsts asts key f = V.foldl' add HM.empty asts
 
 idOf :: Object -> ID
 idOf x = fromJust $ do
-  (n, m, p) <- getNMP x
-  return (N n, M m, P p)
+  (!n, !m, !p) <- getNMP x
+  return $! (N n, M m, P p)
 
 pureKmeans :: Maybe Int -> Clusterer I.Identity
 pureKmeans cs asts = pure (toClusters (if num == 0 then V.empty else go))
@@ -151,7 +152,7 @@ pureKmeans cs asts = pure (toClusters (if num == 0 then V.empty else go))
             x       -> error (show ("Got the following 'features'", x))
 
         concatClusters :: (Int, ASTs) -> [Value] -> (Int, ASTs)
-        concatClusters (n, asts) c =
+        concatClusters (!n, !asts) c =
           (n+1, asts V.++ V.fromList (map (addCluster n) c))
 
         addCluster :: Int -> Value -> Value
