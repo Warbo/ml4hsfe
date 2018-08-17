@@ -63,13 +63,13 @@ clusterSCCs f = go
            in go asts' sccs
 
 enableScc :: ASTs -> SCC -> ASTs
-enableScc !asts s' | V.null s' = asts
-enableScc !asts s'             = enableScc (V.map f asts) (V.tail s')
-  where Object !s  = V.head s'
-        Just (String !name) = HM.lookup "name"    s
-        Just (String !mod ) = HM.lookup "module"  s
-        Just (String !pkg ) = HM.lookup "package" s
-        f = enableMatching (N name) (M mod) (P pkg)
+enableScc = V.foldl' go
+  where go :: ASTs -> Value -> ASTs
+        go !asts (Object !s) = let Just (String !name) = HM.lookup "name"    s
+                                   Just (String !mod ) = HM.lookup "module"  s
+                                   Just (String !pkg ) = HM.lookup "package" s
+                                   f = enableMatching (N name) (M mod) (P pkg)
+                                in V.map f asts
 
 enableMatching :: Name -> Module -> Package -> Value -> Value
 enableMatching (N !name) (M !mod) (P !pkg) (Object !x) = Object o
