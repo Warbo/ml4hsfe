@@ -22,6 +22,7 @@ import qualified Data.Vector                as V
 import           GHC.Generics (Generic)
 import qualified Grapher                    as OD -- From order-deps
 import qualified HS2AST.Types               as H
+import qualified ML4HSFE.Loop               as Loop
 import           System.Environment
 import           System.Exit
 import           System.IO
@@ -232,3 +233,14 @@ findAst asts (N name) (M mod) (P pkg) key = V.find ((/= Nothing) . check) asts
           if n == name && m == mod && p == pkg
              then Just val
              else Nothing
+
+outerMain :: IO ()
+outerMain = do
+  rawAsts  <- LBS.getContents
+  width    <- getEnv "WIDTH"
+  height   <- getEnv "HEIGHT"
+  clusters <- lookupEnv "CLUSTERS"
+  let asts  = Loop.handle (read width) (read height) rawAsts
+      asts' = I.runIdentity
+                (clusterLoop (pureKmeans (read <$> clusters)) (encode asts))
+  putStrLn (renderAsts asts')
