@@ -1,5 +1,5 @@
-with import <nixpkgs> {};
+with import ./overlayed.nix;
 stdenv.mkDerivation {
   name        = "ML4HSFE-shell";
-  buildInputs = [ haskell.packages.ghc7103.ghc ];
+  buildInputs = [ asv-nix git hsPkgs.ghc ];
 }

@@ -2,6 +2,12 @@ self: super:
 
 with builtins;
 with {
+  asvNixSrc = self.fetchgit {
+    url    = http://chriswarbo.net/git/asv-nix.git;
+    rev    = "54d2a89";
+    sha256 = "0hh56xk8z1bzv2v1j2vxmmap8bww8wkjkfqx4cf43jgigalw5miz";
+  };
+
   mkHs = { profile ? false }: self.haskell.packages.ghc7103.override (old: {
     overrides = self.lib.composeExtensions
       (old.overrides or (_: _: {}))
@@ -61,6 +67,8 @@ with {
   });
 };
 {
+  asv-nix = import "${asvNixSrc}" { inherit (self) path; };
+
   helpersSrc = self.fetchgit {
     url    = http://chriswarbo.net/git/nix-helpers.git;
     rev    = "ed8379a";
