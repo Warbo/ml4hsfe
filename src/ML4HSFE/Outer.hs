@@ -56,11 +56,8 @@ clusterLoop f !asts = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
                      Success ids -> OD.process ids
 
 clusterSCCs :: Clusterer -> ASTs -> [SCC] -> ASTs
-clusterSCCs f = go
-  where go !asts []          = asts
-        go !asts (!scc:sccs) =
-          let !asts' = regularCluster f (enableScc asts scc)
-           in go asts' sccs
+clusterSCCs f = L.foldl' go
+  where go !asts scc = regularCluster f (enableScc asts scc)
 
 enableScc :: ASTs -> SCC -> ASTs
 enableScc = V.foldl' go
