@@ -51,7 +51,9 @@ fromRight (Left  e) = error e
 
 clusterLoop :: Monad f => Clusterer f -> ASTs -> f ASTs
 clusterLoop f !asts = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
-  where !sccsStr = order (encode asts)
+  where !sccsStr = case fromJSON (Array asts) of
+                     Error   msg -> error msg
+                     Success ids -> OD.process ids
 
 clusterLoopT :: Monad f => Clusterer f -> ASTs -> f ASTs
 clusterLoopT f s = clusterSCCsT f asts sccs
