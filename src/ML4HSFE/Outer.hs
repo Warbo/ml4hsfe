@@ -54,8 +54,8 @@ clusterLoop f !s = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
   where !asts    = fromRight (eitherDecode' s)
         !sccsStr = order s
 
-clusterLoopT :: ASTs -> I.Identity ASTs
-clusterLoopT s = clusterSCCsT asts sccs
+clusterLoopT :: Monad f => Clusterer f -> ASTs -> f ASTs
+clusterLoopT f s = clusterSCCsT f asts sccs
   where asts = s
         sccs = map OD.toIds .
                OD.group     .
@@ -69,9 +69,9 @@ clusterSCCs f = go
           !asts' <- regularCluster f (enableScc asts scc)
           go asts' sccs
 
-clusterSCCsT :: ASTs -> [[H.Identifier]] -> I.Identity ASTs
-clusterSCCsT = foldM go
-  where go asts scc = regularCluster (pureKmeans Nothing) (enableSccT asts scc)
+clusterSCCsT :: Monad f => Clusterer f -> ASTs -> [[H.Identifier]] -> f ASTs
+clusterSCCsT f = foldM go
+  where go !asts scc = regularCluster f (enableSccT asts scc)
 
 enableScc :: ASTs -> SCC -> ASTs
 enableScc !asts s' =
@@ -85,19 +85,12 @@ enableScc !asts s' =
            in enableScc (V.map f asts) (V.tail s')
 
 enableSccT :: ASTs -> [H.Identifier] -> ASTs
-enableSccT asts s' =
-    if null s'
-       then asts
-       else enable (tail s') (head s')
-  where enable ss s =
-          let [name, mod, pkg] = [H.idName    s,
-                                  H.idModule  s,
-                                  H.idPackage s]
-           in enableSccT (V.map (enableMatching (N name)
-                                                (M mod)
-                                                (P pkg))
-                                asts)
-                         ss
+enableSccT !asts []     = asts
+enableSccT !asts (s:ss) =
+  let [!name, !mod, !pkg] = [H.idName s, H.idModule s, H.idPackage s]
+   in enableSccT (V.map (enableMatching (N name) (M mod) (P pkg))
+                        asts)
+                 ss
 
 enableMatching :: Name -> Module -> Package -> Value -> Value
 enableMatching (N !name) (M !mod) (P !pkg) !x' = result
