@@ -4,39 +4,28 @@ module Suites.Outer where
 
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BS
-import qualified Data.Functor.Identity      as I
 import qualified Data.HashMap.Strict        as HM
 import qualified Data.Vector                as V
 import           System.IO.Unsafe
 import           ML4HSFE.Outer
 import           ML4HSFE.Loop
+import qualified ML4HSFE.Types              as Ty
 import           System.Exit
 import           System.Process
 import           Test.Tasty             (testGroup)
 import           Test.Tasty.QuickCheck
 
 tests = testGroup "Outer loop tests" [
-    testProperty "Loop contains objects" arrayOfObjects
-  , testProperty "Objects have clusters" objectsHaveClusters
-  , testProperty "Clusters are numbers"  clustersAreNumbers
+    testProperty "Objects have clusters" objectsHaveClusters
   ]
 
-arrayOfObjects = all isOb clustered
-  where isOb (Object _) = True
-        isOb x          = error (show (("Expected", "Object _"),
-                                       ("Got",      x)))
-
 objectsHaveClusters = all hasCluster clustered
-  where hasCluster (Object o) = "cluster" `HM.member` o
-
-clustersAreNumbers = all clusterIsNum clustered
-  where clusterIsNum (Object o) = case HM.lookup "cluster" o of
-          Just (Number _) -> True
-          x               -> error (show (("Expected", "Just (Number _)"),
-                                          ("Got",      x)))
+  where hasCluster o = case Ty.entryCluster o of
+                         Nothing -> False
+                         Just _  -> True
 
 {-# NOINLINE clustered #-}
-clustered :: [Value]
+clustered :: [Ty.Entry]
 clustered = V.toList (clusterLoop (pureKmeans (Just 5)) asts sccs)
   where width        = 30
         height       = 30

@@ -20,43 +20,43 @@ import           ML4HSFE.Types
 import qualified Types                      as Ty
 
 ml4hsfe :: Int -> Int -> BS.ByteString -> BS.ByteString
-        -> [BS.ByteString] -> LBS.ByteString -> A.Array
+        -> [BS.ByteString] -> LBS.ByteString -> Features
 ml4hsfe w h mod pkg names rawAst = DS.force vec
   where rawAst'   = LBS.toStrict rawAst
+        processed :: [Feature]
         processed = processVal w h mod pkg names rawAst'
-        vec       = V.map featureToVal (V.fromList processed)
+        vec       = V.fromList processed
 
-featureToVal :: Feature -> A.Value
-featureToVal (Left  !i)  = A.Number (fromInteger (toInteger i))
-featureToVal (Right !id) = let !name = H.idName    id
-                               !mod  = H.idModule  id
-                               !pkg  = H.idPackage id
-                            in A.Object (HM.fromList [
-                                 (   "name", A.String name),
-                                 ( "module", A.String mod ),
-                                 ("package", A.String pkg )])
-
-handle :: Int -> Int -> LBS.ByteString -> (V.Vector A.Value, [[H.Identifier]])
+handle :: Int -> Int -> LBS.ByteString -> (V.Vector Entry, [[H.Identifier]])
 handle w h x = case A.decode x of
   Nothing   -> error "Failed to parse array of ASTs"
   Just !all -> (V.map (handleOne w h all) all,
                 L.map G.toIds (G.group (L.map Ty.valToAstId (V.toList all))))
 
-unString (A.String s) = s
-unString _ = error "Was expecting a string"
+enc = TE.encodeUtf8
 
-unBS = TE.encodeUtf8 . unString
-
-handleOne :: Int -> Int -> A.Array -> A.Value -> A.Value
-handleOne !w !h !xs (A.Object !x) = A.Object result
-  where !result   = HM.insert "features" (A.Array features) x
-        !features = ml4hsfe w h (unBS mod) (unBS pkg) names
-                            (LBS.fromStrict (unBS ast))
-        Just !ast = HM.lookup "ast"     x
-        Just !mod = HM.lookup "module"  x
-        Just !pkg = HM.lookup "package" x
+handleOne :: Int -> Int -> A.Array -> A.Value -> Entry
+handleOne !w !h !xs (A.Object !x) = Entry {
+                                      entryCluster   = Nothing,
+                                      entryToCluster = False,
+                                      entryFeatures  = Just features,
+                                      entryId = H.ID {
+                                          H.idPackage = pkg,
+                                          H.idModule  = mod,
+                                          H.idName    = name
+                                      }
+                                    }
+  where !features = ml4hsfe w h (enc mod) (enc pkg) names
+                            (LBS.fromStrict (enc ast))
+        Just (A.String !ast ) = HM.lookup "ast"     x
+        Just (A.String !name) = HM.lookup "name"    x
+        Just (A.String !mod ) = HM.lookup "module"  x
+        Just (A.String !pkg ) = HM.lookup "package" x
         names    = L.map getName (L.filter matchPkgMod (V.toList xs))
         getName (A.Object o) = case HM.lookup "name" o of
                                  Just (A.String !s) -> TE.encodeUtf8 s
-        matchPkgMod (A.Object y) = (HM.lookup "package" y == Just pkg) &&
-                                   (HM.lookup "module"  y == Just mod)
+
+        -- TODO: Why are we limiting things to one package/module?
+        matchPkgMod (A.Object y) =
+          (HM.lookup "package" y == Just (A.String pkg)) &&
+          (HM.lookup "module"  y == Just (A.String mod))

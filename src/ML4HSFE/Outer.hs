@@ -8,7 +8,6 @@ import           Data.Aeson
 import           Data.Aeson.Types
 import qualified Data.ByteString.Char8      as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import qualified Data.Functor.Identity      as I
 import           Data.Hashable
 import qualified Data.HashMap.Strict        as HM
 import qualified Data.KMeans                as K
@@ -23,6 +22,7 @@ import           GHC.Generics (Generic)
 import qualified Grapher                    as G
 import qualified HS2AST.Types               as H
 import qualified ML4HSFE.Loop               as Loop
+import qualified ML4HSFE.Types              as Ty
 import           System.Environment
 import           System.Exit
 import           System.IO
@@ -30,71 +30,76 @@ import           System.IO.Unsafe
 import           System.Process
 import qualified System.Process.ByteString.Lazy as SBS
 
-type ASTs   = Array
+type ASTs   = V.Vector Ty.Entry
 type AST    = Value
 type SCC    = [H.Identifier]
-type ID     = (Name, Module, Package)
-type Prop a = HM.HashMap ID a
+type Prop a = HM.HashMap H.Identifier a
 
-newtype Name      = N T.Text deriving (Show, Eq, Generic)
-newtype Module    = M T.Text deriving (Show, Eq, Generic)
-newtype Package   = P T.Text deriving (Show, Eq, Generic)
-newtype ClusterID = C Sci.Scientific deriving (Show, Eq, Generic)
+newtype Name    = N T.Text deriving (Show, Eq, Generic)
+newtype Module  = M T.Text deriving (Show, Eq, Generic)
+newtype Package = P T.Text deriving (Show, Eq, Generic)
+type ClusterID  = Int
 
 instance Hashable Name
 instance Hashable Module
 instance Hashable Package
+
+instance Hashable H.Identifier where
+  hashWithSalt salt i = salt `hashWithSalt` H.idName    i
+                             `hashWithSalt` H.idModule  i
+                             `hashWithSalt` H.idPackage i
 
 type Clusterer = ASTs -> Prop ClusterID
 
 clusterLoop :: Clusterer -> ASTs -> [SCC] -> ASTs
 clusterLoop f = L.foldl' go
   where go :: ASTs -> SCC -> ASTs
-        go asts scc = regularCluster f (enableScc asts scc)
+        go asts scc = regularCluster (enableScc asts scc)
+
+        -- Set the features to whatever cluster numbers appear in asts, run
+        -- clusterer on these finalised features, then splice the resulting
+        -- numbers back into the original asts array (so we can set new values
+        -- for the features next time)
+        regularCluster :: ASTs -> ASTs
+        regularCluster !asts = V.map (`setClusterFrom` f (setOwnFeatures asts)) asts
+
+setOwnFeatures :: ASTs -> ASTs
+setOwnFeatures !asts = let !clusters = toClusters $! asts
+                        in V.map (setFeaturesFrom clusters) asts
+
+toClusters :: ASTs -> Prop ClusterID
+toClusters = V.foldl' add HM.empty
+  where add ps e = case Ty.entryCluster e of
+                     Nothing -> ps
+                     Just !v -> let !i = Ty.entryId e
+                                 in HM.insert i v ps
 
 enableScc :: ASTs -> SCC -> ASTs
 enableScc = L.foldl' go
   where go :: ASTs -> H.Identifier -> ASTs
         go !asts i = V.map (enableMatching i) asts
 
-enableMatching :: H.Identifier -> Value -> Value
-enableMatching i = go
-  where !name = H.idName    i
-        !mod  = H.idModule  i
-        !pkg  = H.idPackage i
-        go (Object !x) = let Just (String !n) = HM.lookup "name"    x
-                             Just (String !m) = HM.lookup "module"  x
-                             Just (String !p) = HM.lookup "package" x
-                             clusterable = HM.insert "tocluster" (Bool True) x
-                          in Object $! if n == name && m == mod && p == pkg
-                                          then clusterable
-                                          else x
+enableMatching :: H.Identifier -> Ty.Entry -> Ty.Entry
+enableMatching i x = if i == Ty.entryId x
+                        then x { Ty.entryToCluster = True }
+                        else x
 
--- Set the features to whatever cluster numbers appear in asts, run clusterer on
--- these finalised features, then splice the resulting numbers back into the
--- original asts array (so we can set new values for the features next time)
-regularCluster :: Clusterer -> ASTs -> ASTs
-regularCluster f !asts = setClustersFrom asts clusters
-  where !withFeatures = setOwnFeatures asts
-        !clusters     = f withFeatures
+setClusterFrom :: Ty.Entry -> Prop ClusterID -> Ty.Entry
+setClusterFrom !ast clusters = ast {
+    Ty.entryCluster = HM.lookup (Ty.entryId ast) clusters
+  }
 
-setOwnFeatures :: ASTs -> ASTs
-setOwnFeatures !asts = let !clusters = readAsts asts "cluster" (C . unNum)
-                        in V.map (setFeaturesFrom clusters) asts
+
+getNMP x = do String !n <- HM.lookup "name"    x
+              String !m <- HM.lookup "module"  x
+              String !p <- HM.lookup "package" x
+              return $! (n, m, p)
 
 unNum (Number !n) = n
 unNum x           = error (show ("Expected 'Number'", x))
 
-readAsts :: ASTs -> T.Text -> (Value -> a) -> Prop a
-readAsts asts key f = V.foldl' add HM.empty asts
-  where add ps (Object o) = case HM.lookup key o of
-          Nothing -> ps
-          Just v  -> HM.insert (idOf o) (f v) ps
-
-idOf :: Object -> ID
-idOf x = fromJust $ do
-  (!n, !m, !p) <- getNMP x
-  return $! (N n, M m, P p)
+fromLeft (Left  x) = x
+fromLeft (Right _) = error "Expected a Left"
 
 pureKmeans :: Maybe Int -> Clusterer
 pureKmeans cs asts = toClusters (if num == 0 then V.empty else go)
@@ -103,29 +108,25 @@ pureKmeans cs asts = toClusters (if num == 0 then V.empty else go)
                            (0, V.empty)
                            (K.kmeansGen toFeatures clusters getCsv))
 
-        toFeatures :: Value -> [Double]
-        toFeatures (Object o) =
-          case HM.lookupDefault (error "No 'features'") "features" o of
-            Array a -> map (Sci.toRealFloat . unNum) (V.toList a)
-            x       -> error (show ("Got the following 'features'", x))
+        toFeatures :: Ty.Entry -> [Double]
+        toFeatures o = case Ty.entryFeatures o of
+                         Nothing -> error "No features"
+                         Just a  -> map (fromIntegral . fromLeft) (V.toList a)
 
-        concatClusters :: (Int, ASTs) -> [Value] -> (Int, ASTs)
+        concatClusters :: (Int, ASTs) -> [Ty.Entry] -> (Int, ASTs)
         concatClusters (!n, !asts) c =
           (n+1, asts V.++ V.fromList (map (addCluster n) c))
 
-        addCluster :: Int -> Value -> Value
-        addCluster n (Object o) = Object (HM.insert "cluster"
-                                                    (Number (fromIntegral (n+1)))
-                                                    o)
+        addCluster :: Int -> Ty.Entry -> Ty.Entry
+        addCluster n e = e { Ty.entryCluster = Just (n+1) }
 
         inlines :: ASTs
         inlines = V.filter keep asts
 
-        keep :: Value -> Bool
-        keep (Object o) = HM.member "features" o &&
-                          case HM.lookupDefault (Bool False) "tocluster" o of
-                            Bool b -> b
-        keep _          = False
+        keep :: Ty.Entry -> Bool
+        keep o = case Ty.entryFeatures o of
+          Nothing -> False
+          Just _  -> Ty.entryToCluster o
 
         num :: Int
         num = length inlines
@@ -133,61 +134,23 @@ pureKmeans cs asts = toClusters (if num == 0 then V.empty else go)
         clusters :: Int
         clusters = fromMaybe (ceiling (sqrt (fromIntegral num / 2))) cs
 
-        getCsv :: [Value]
+        getCsv :: [Ty.Entry]
         getCsv = filter clusterable (V.toList inlines)
 
-        clusterable x =
-          case x of
-            Object o -> case HM.lookupDefault (Array V.empty) "features" o of
-                          Array a -> not (V.null a)
-                          y       -> error (show ("'features' should be array",
-                                                 y))
-            _        -> error (show ("ASTs should be objects", x))
+        clusterable x = case Ty.entryFeatures x of
+                          Nothing -> False
+                          Just _  -> True
 
-toClusters xs = readAsts xs "cluster" (C . unNum)
+setFeaturesFrom :: Prop ClusterID -> Ty.Entry -> Ty.Entry
+setFeaturesFrom clusters ast = case Ty.entryFeatures ast of
+    Nothing -> ast
+    Just fv -> ast { Ty.entryFeatures = Just (V.map (setFVFrom clusters) fv) }
 
-setClustersFrom :: ASTs -> Prop ClusterID -> ASTs
-setClustersFrom !into from = let !v = V.map (`setClusterFrom` from) into
-                              in v
-
-setClusterFrom :: Value -> Prop ClusterID -> Value
-setClusterFrom (Object !ast) clusters = Object ast'
-  where !ast' = case go of
-                  Nothing     -> ast
-                  Just (C !c) -> HM.insert "cluster" (Number c) ast
-        go = do (n, m, p) <- getNMP ast
-                HM.lookup (N n, M m, P p) clusters
-
-getNMP x = do String !n <- HM.lookup "name"    x
-              String !m <- HM.lookup "module"  x
-              String !p <- HM.lookup "package" x
-              return $! (n, m, p)
-
-setFeaturesFrom :: Prop ClusterID -> Value -> Value
-setFeaturesFrom clusters (Object ast) =
-  Object $ case HM.lookup "features" ast of
-    Nothing         -> ast
-    Just (Array fv) -> HM.insert "features"
-                                 (Array (V.map (setFVFrom clusters) fv))
-                                 ast
-
-setFVFrom :: Prop ClusterID -> Value -> Value
-setFVFrom _        (Number n) = Number n
-setFVFrom clusters (Object f) = Number . (300 +) $ case new of
-                                                    Nothing    -> 0
-                                                    Just (C n) -> n
-  where new = do
-          (n, m, p) <- getNMP f
-          HM.lookup (N n, M m, P p) clusters
-
-findAst :: ASTs -> Name -> Module -> Package -> T.Text -> Maybe Value
-findAst asts (N name) (M mod) (P pkg) key = V.find ((/= Nothing) . check) asts
-  where check (Object x) = do
-          (n, m, p) <- getNMP x
-          val       <- HM.lookup key       x
-          if n == name && m == mod && p == pkg
-             then Just val
-             else Nothing
+setFVFrom :: Prop ClusterID -> Ty.Feature -> Ty.Feature
+setFVFrom _        (Left  n) = Left n
+setFVFrom clusters (Right i) = Left (300 + (case HM.lookup i clusters of
+                                             Nothing -> 0
+                                             Just n  -> n))
 
 outerMain :: IO ()
 outerMain = do

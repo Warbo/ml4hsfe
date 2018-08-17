@@ -1,15 +1,34 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE OverloadedStrings #-}
 module ML4HSFE.Types where
 
+import qualified Data.Aeson      as A
 import           Control.DeepSeq (($!!), deepseq, force, NFData, rnf)
-import qualified Data.Text as T
+import qualified Data.Vector     as V
+import qualified Data.Text       as T
 import           HS2AST.Types
+
+data Entry = Entry {
+  entryId        :: !Identifier,
+  entryCluster   :: Maybe Int,
+  entryToCluster :: !Bool,
+  entryFeatures  :: Maybe Features
+}
+
+instance A.ToJSON Entry where
+  toJSON e = A.object (["name"    A..= idName    id,
+                        "module"  A..= idModule  id,
+                        "package" A..= idPackage id] ++ c)
+    where id = entryId e
+          c  = case entryCluster e of
+                 Nothing -> []
+                 Just n  -> ["cluster" A..= n]
 
 data RoseTree = Node !Feature ![RoseTree] deriving (Show)
 
 type Feature = Either Int Identifier
 
-type Features = [[Maybe Feature]]
+type Features = V.Vector Feature
 
 data Expr = Var  !Id
           | Lit  !Literal
