@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 module ML4HSFE.Parse where
 
 import qualified Control.DeepSeq as DS
