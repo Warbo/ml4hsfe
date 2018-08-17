@@ -55,14 +55,6 @@ clusterLoop f !asts = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
                      Error   msg -> error msg
                      Success ids -> OD.process ids
 
-clusterLoopT :: Monad f => Clusterer f -> ASTs -> f ASTs
-clusterLoopT f s = clusterSCCsT f asts sccs
-  where asts = s
-        sccs = map OD.toIds .
-               OD.group     .
-               V.toList     .
-               V.map (fromRight . parseEither parseJSON) $ s
-
 clusterSCCs :: Monad f => Clusterer f -> ASTs -> [SCC] -> f ASTs
 clusterSCCs f = go
   where go !asts []          = pure asts
@@ -70,9 +62,6 @@ clusterSCCs f = go
           !asts' <- regularCluster f (enableScc asts scc)
           go asts' sccs
 
-clusterSCCsT :: Monad f => Clusterer f -> ASTs -> [[H.Identifier]] -> f ASTs
-clusterSCCsT f = foldM go
-  where go !asts scc = regularCluster f (enableSccT asts scc)
 
 enableScc :: ASTs -> SCC -> ASTs
 enableScc !asts s' =
@@ -84,14 +73,6 @@ enableScc !asts s' =
               Just (String !pkg ) = HM.lookup "package" s
               f          = enableMatching (N name) (M mod) (P pkg)
            in enableScc (V.map f asts) (V.tail s')
-
-enableSccT :: ASTs -> [H.Identifier] -> ASTs
-enableSccT !asts []     = asts
-enableSccT !asts (s:ss) =
-  let [!name, !mod, !pkg] = [H.idName s, H.idModule s, H.idPackage s]
-   in enableSccT (V.map (enableMatching (N name) (M mod) (P pkg))
-                        asts)
-                 ss
 
 enableMatching :: Name -> Module -> Package -> Value -> Value
 enableMatching (N !name) (M !mod) (P !pkg) !x' = result
