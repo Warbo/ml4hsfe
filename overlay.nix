@@ -95,14 +95,22 @@ with {
       mkdir "$out"
       cd "$out"
 
-      # Spot space leaks my measuring heap usage; produces ml4hsfe-outer-loop.hp
+      echo "Running example to generate heap profile (to spot space leaks)" 1>&2
       ml4hsfe-outer-loop +RTS -hc -i0.01 -L50 -RTS < "$example" > /dev/null
-      mv *.hp heap.hp
+      mv -v *.hp heap.hp
 
-      # Plot heap usage for easier debugging. GHC can plot as PostScript, then
-      # we use GhostScript to convert to PDF.
-      "${self.hsPkgs.ghc}/bin/hp2ps" -c < heap.hp > heap.ps
-      ps2pdf heap.ps
+      echo "Rendering heap usage as PostScript chart" 1>&2
+      if "${self.hsPkgs.ghc}/bin/hp2ps" -c < heap.hp > heap.ps
+      then
+        echo "Converting PostScript to PDF" 1>&2
+        ps2pdf heap.ps || echo "WARNING: Failed converting chart to PDF" 1>&2
+      else
+        echo "WARNING: Failed to render PostScript heap chart" 1>&2
+      fi
+
+      echo "Rendering heap usage as SVG chart" 1>&2
+      "${self.hsPkgs.hp2pretty}/bin/hp2pretty" heap.hp ||
+        echo "WARNING: Failed to render SVG heap chart"
     '';
 
   inherit (self.hsPkgs) ML4HSFE;
