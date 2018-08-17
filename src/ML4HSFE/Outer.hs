@@ -63,28 +63,22 @@ clusterSCCs f = go
            in go asts' sccs
 
 enableScc :: ASTs -> SCC -> ASTs
-enableScc !asts s' =
-  if V.null s'
-     then asts
-     else let Object !s  = V.head s'
-              Just (String !name) = HM.lookup "name"    s
-              Just (String !mod ) = HM.lookup "module"  s
-              Just (String !pkg ) = HM.lookup "package" s
-              f          = enableMatching (N name) (M mod) (P pkg)
-           in enableScc (V.map f asts) (V.tail s')
+enableScc !asts s' | V.null s' = asts
+enableScc !asts s'             = enableScc (V.map f asts) (V.tail s')
+  where Object !s  = V.head s'
+        Just (String !name) = HM.lookup "name"    s
+        Just (String !mod ) = HM.lookup "module"  s
+        Just (String !pkg ) = HM.lookup "package" s
+        f = enableMatching (N name) (M mod) (P pkg)
 
 enableMatching :: Name -> Module -> Package -> Value -> Value
-enableMatching (N !name) (M !mod) (P !pkg) !x' = result
-  where result@(Object !hm) = fromRight . (`parseEither` x')
-                                        . withObject "Need object for AST" $ go
-        go !x = do
-          n <- x .: "name"
-          m <- x .: "module"
-          p <- x .: "package"
-          let !o = if n == name && m == mod && p == pkg
-                      then HM.insert "tocluster" (Bool True) x
-                      else x
-          return $! Object o
+enableMatching (N !name) (M !mod) (P !pkg) (Object !x) = Object o
+  where Just (String !n) = HM.lookup "name"    x
+        Just (String !m) = HM.lookup "module"  x
+        Just (String !p) = HM.lookup "package" x
+        !o = if n == name && m == mod && p == pkg
+                then HM.insert "tocluster" (Bool True) x
+                else x
 
 order :: LBS.ByteString -> LBS.ByteString
 order = OD.process . OD.parse

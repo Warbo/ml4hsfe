@@ -42,12 +42,12 @@ development I use ghcid to build and run tests after each save. I find the
 following `.ghcid` file works well:
 
 ```
---command="nix-shell --run 'cabal new-repl test'"
---test=":main"
+--command="nix-shell --run 'cabal new-repl'"
+--test=":! cabal new-test"
 ```
 
-The call to `nix-shell` ensures that the GHC defined in `shell.nix` is used, the
-`cabal new-repl` command invokes GHCi and the `test` argument ensures we're
-loading the test suite as well (the library is a dependency of the tests). The
-contents of the `--test` option will be sent to GHCi whenever the project is
-successfully built/loaded. We send `:main` to run the test suite.
+The call to `nix-shell` ensures that the GHC defined in `shell.nix` is used, and
+`cabal new-repl` invokes GHCi with this library in scope. The contents of the
+`--test` option will be sent to GHCi whenever the project is successfully
+built/loaded. We use `:!` to invoke a shell command, and `cabal new-main` is the
+command to run the test suite.
