@@ -44,11 +44,6 @@ injectGraphable :: (Atom, Atom, [Atom]) -> ASTId
 injectGraphable (a, _, as) = ASTId { aId   = atomToId a,
                                      aDeps = map atomToId as }
 
-parse :: B.ByteString -> [ASTId]
-parse s = case eitherDecode s of
-               Left err  -> error err
-               Right !ps -> ps
-
 -- Includes as many Atoms as possible in each group
 group :: [ASTId] -> [SCC Atom]
 group = bigSCCs . map extractGraphable

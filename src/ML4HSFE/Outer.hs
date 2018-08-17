@@ -20,7 +20,7 @@ import qualified Data.Stringable            as S
 import qualified Data.Text                  as T
 import qualified Data.Vector                as V
 import           GHC.Generics (Generic)
-import qualified Grapher                    as OD -- From order-deps
+import qualified Grapher                    as G
 import qualified HS2AST.Types               as H
 import qualified ML4HSFE.Loop               as Loop
 import           System.Environment
@@ -31,7 +31,7 @@ import           System.Process
 import qualified System.Process.ByteString.Lazy as SBS
 
 type ASTs   = Array
-type SCC    = Array
+type SCC    = [H.Identifier]
 type ID     = (Name, Module, Package)
 type Prop a = HM.HashMap ID a
 
@@ -50,23 +50,23 @@ fromRight (Right x) = x
 fromRight (Left  e) = error e
 
 clusterLoop :: Clusterer -> ASTs -> ASTs
-clusterLoop f !asts = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
-  where !sccsStr = case fromJSON (Array asts) of
-                     Error   msg -> error msg
-                     Success ids -> OD.process ids
+clusterLoop f !asts = clusterSCCs f asts sccs
+  where !sccs = case fromJSON (Array asts) of
+                  Error   msg -> error msg
+                  Success ids -> L.map G.toIds (G.group ids)
 
 clusterSCCs :: Clusterer -> ASTs -> [SCC] -> ASTs
 clusterSCCs f = L.foldl' go
   where go !asts scc = regularCluster f (enableScc asts scc)
 
 enableScc :: ASTs -> SCC -> ASTs
-enableScc = V.foldl' go
-  where go :: ASTs -> Value -> ASTs
-        go !asts (Object !s) = let Just (String !name) = HM.lookup "name"    s
-                                   Just (String !mod ) = HM.lookup "module"  s
-                                   Just (String !pkg ) = HM.lookup "package" s
-                                   f = enableMatching (N name) (M mod) (P pkg)
-                                in V.map f asts
+enableScc = L.foldl' go
+  where go :: ASTs -> H.Identifier -> ASTs
+        go !asts i = let !name = H.idName    i
+                         !mod  = H.idModule  i
+                         !pkg  = H.idPackage i
+                         f = enableMatching (N name) (M mod) (P pkg)
+                      in V.map f asts
 
 enableMatching :: Name -> Module -> Package -> Value -> Value
 enableMatching (N !name) (M !mod) (P !pkg) (Object !x) = Object o
@@ -76,9 +76,6 @@ enableMatching (N !name) (M !mod) (P !pkg) (Object !x) = Object o
         !o = if n == name && m == mod && p == pkg
                 then HM.insert "tocluster" (Bool True) x
                 else x
-
-order :: LBS.ByteString -> LBS.ByteString
-order = OD.process . OD.parse
 
 renderAsts :: ASTs -> String
 renderAsts = S.toString . encode
