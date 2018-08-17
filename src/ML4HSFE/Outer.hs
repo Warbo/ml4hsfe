@@ -47,9 +47,6 @@ instance Hashable Package
 
 type Clusterer = ASTs -> Prop ClusterID
 
-fromRight (Right x) = x
-fromRight (Left  e) = error e
-
 clusterLoop :: Clusterer -> ASTs -> [SCC] -> ASTs
 clusterLoop f = L.foldl' go
   where go :: ASTs -> SCC -> ASTs
@@ -58,23 +55,20 @@ clusterLoop f = L.foldl' go
 enableScc :: ASTs -> SCC -> ASTs
 enableScc = L.foldl' go
   where go :: ASTs -> H.Identifier -> ASTs
-        go !asts i = let !name = H.idName    i
-                         !mod  = H.idModule  i
-                         !pkg  = H.idPackage i
-                         f = enableMatching (N name) (M mod) (P pkg)
-                      in V.map f asts
+        go !asts i = V.map (enableMatching i) asts
 
-enableMatching :: Name -> Module -> Package -> Value -> Value
-enableMatching (N !name) (M !mod) (P !pkg) (Object !x) = Object o
-  where Just (String !n) = HM.lookup "name"    x
-        Just (String !m) = HM.lookup "module"  x
-        Just (String !p) = HM.lookup "package" x
-        !o = if n == name && m == mod && p == pkg
-                then HM.insert "tocluster" (Bool True) x
-                else x
-
-renderAsts :: ASTs -> String
-renderAsts = S.toString . encode
+enableMatching :: H.Identifier -> Value -> Value
+enableMatching i = go
+  where !name = H.idName    i
+        !mod  = H.idModule  i
+        !pkg  = H.idPackage i
+        go (Object !x) = let Just (String !n) = HM.lookup "name"    x
+                             Just (String !m) = HM.lookup "module"  x
+                             Just (String !p) = HM.lookup "package" x
+                             clusterable = HM.insert "tocluster" (Bool True) x
+                          in Object $! if n == name && m == mod && p == pkg
+                                          then clusterable
+                                          else x
 
 -- Set the features to whatever cluster numbers appear in asts, run clusterer on
 -- these finalised features, then splice the resulting numbers back into the
@@ -198,9 +192,9 @@ findAst asts (N name) (M mod) (P pkg) key = V.find ((/= Nothing) . check) asts
 outerMain :: IO ()
 outerMain = do
   rawAsts  <- LBS.getContents
-  width    <- getEnv "WIDTH"
-  height   <- getEnv "HEIGHT"
+  width    <- read <$> getEnv "WIDTH"
+  height   <- read <$> getEnv "HEIGHT"
   clusters <- lookupEnv "CLUSTERS"
-  let (!asts, !sccs) = Loop.handle (read width) (read height) rawAsts
+  let (!asts, !sccs) = Loop.handle width height rawAsts
       asts' = clusterLoop (pureKmeans (read <$> clusters)) asts sccs
-  putStrLn (renderAsts asts')
+  LBS.putStrLn (encode asts')
