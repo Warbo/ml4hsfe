@@ -63,8 +63,11 @@ clusterLoopT s = clusterSCCsT asts sccs
                V.map (fromRight . parseEither parseJSON) $ s
 
 clusterSCCs :: Monad f => Clusterer f -> ASTs -> [SCC] -> f ASTs
-clusterSCCs f = foldM go
-  where go !asts !scc = regularCluster f (enableScc asts scc)
+clusterSCCs f = go
+  where go !asts []          = pure asts
+        go !asts (!scc:sccs) = do
+          !asts' <- regularCluster f (enableScc asts scc)
+          go asts' sccs
 
 clusterSCCsT :: ASTs -> [[H.Identifier]] -> I.Identity ASTs
 clusterSCCsT = foldM go
