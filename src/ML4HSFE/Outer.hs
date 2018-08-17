@@ -49,10 +49,9 @@ type Clusterer f = (Monad f) => ASTs -> f (Prop ClusterID)
 fromRight (Right x) = x
 fromRight (Left  e) = error e
 
-clusterLoop :: Monad f => Clusterer f -> LBS.ByteString -> f ASTs
-clusterLoop f !s = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
-  where !asts    = fromRight (eitherDecode' s)
-        !sccsStr = order s
+clusterLoop :: Monad f => Clusterer f -> ASTs -> f ASTs
+clusterLoop f !asts = clusterSCCs f asts (fromRight (eitherDecode' sccsStr))
+  where !sccsStr = order (encode asts)
 
 clusterLoopT :: Monad f => Clusterer f -> ASTs -> f ASTs
 clusterLoopT f s = clusterSCCsT f asts sccs
@@ -239,5 +238,5 @@ outerMain = do
   clusters <- lookupEnv "CLUSTERS"
   let asts  = Loop.handle (read width) (read height) rawAsts
       asts' = I.runIdentity
-                (clusterLoop (pureKmeans (read <$> clusters)) (encode asts))
+                (clusterLoop (pureKmeans (read <$> clusters)) asts)
   putStrLn (renderAsts asts')
