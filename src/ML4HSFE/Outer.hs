@@ -31,6 +31,7 @@ import           System.Process
 import qualified System.Process.ByteString.Lazy as SBS
 
 type ASTs   = Array
+type AST    = Value
 type SCC    = [H.Identifier]
 type ID     = (Name, Module, Package)
 type Prop a = HM.HashMap ID a
@@ -49,15 +50,10 @@ type Clusterer = ASTs -> Prop ClusterID
 fromRight (Right x) = x
 fromRight (Left  e) = error e
 
-clusterLoop :: Clusterer -> ASTs -> ASTs
-clusterLoop f !asts = clusterSCCs f asts sccs
-  where !sccs = case fromJSON (Array asts) of
-                  Error   msg -> error msg
-                  Success ids -> L.map G.toIds (G.group ids)
-
-clusterSCCs :: Clusterer -> ASTs -> [SCC] -> ASTs
-clusterSCCs f = L.foldl' go
-  where go !asts scc = regularCluster f (enableScc asts scc)
+clusterLoop :: Clusterer -> ASTs -> [SCC] -> ASTs
+clusterLoop f = L.foldl' go
+  where go :: ASTs -> SCC -> ASTs
+        go asts scc = regularCluster f (enableScc asts scc)
 
 enableScc :: ASTs -> SCC -> ASTs
 enableScc = L.foldl' go
@@ -89,7 +85,7 @@ regularCluster f !asts = setClustersFrom asts clusters
         !clusters     = f withFeatures
 
 setOwnFeatures :: ASTs -> ASTs
-setOwnFeatures !asts = let clusters = readAsts asts "cluster" (C . unNum)
+setOwnFeatures !asts = let !clusters = readAsts asts "cluster" (C . unNum)
                         in V.map (setFeaturesFrom clusters) asts
 
 unNum (Number !n) = n
@@ -205,6 +201,6 @@ outerMain = do
   width    <- getEnv "WIDTH"
   height   <- getEnv "HEIGHT"
   clusters <- lookupEnv "CLUSTERS"
-  let asts  = Loop.handle (read width) (read height) rawAsts
-      asts' = clusterLoop (pureKmeans (read <$> clusters)) asts
+  let (!asts, !sccs) = Loop.handle (read width) (read height) rawAsts
+      asts' = clusterLoop (pureKmeans (read <$> clusters)) asts sccs
   putStrLn (renderAsts asts')

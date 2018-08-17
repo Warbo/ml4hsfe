@@ -13,9 +13,11 @@ import           Data.Maybe
 import qualified Data.Stringable            as S
 import qualified Data.Text.Encoding         as TE
 import qualified Data.Vector                as V
+import qualified Grapher                    as G
 import qualified HS2AST.Types               as H
 import           ML4HSFE
 import           ML4HSFE.Types
+import qualified Types                      as Ty
 
 ml4hsfe :: Int -> Int -> BS.ByteString -> BS.ByteString
         -> [BS.ByteString] -> LBS.ByteString -> A.Array
@@ -34,10 +36,11 @@ featureToVal (Right !id) = let !name = H.idName    id
                                  ( "module", A.String mod ),
                                  ("package", A.String pkg )])
 
-handle :: Int -> Int -> LBS.ByteString -> V.Vector A.Value
+handle :: Int -> Int -> LBS.ByteString -> (V.Vector A.Value, [[H.Identifier]])
 handle w h x = case A.decode x of
-  Nothing  -> error "Failed to parse array of ASTs"
-  Just all -> V.map (handleOne w h all) all
+  Nothing   -> error "Failed to parse array of ASTs"
+  Just !all -> (V.map (handleOne w h all) all,
+                L.map G.toIds (G.group (L.map Ty.valToAstId (V.toList all))))
 
 unString (A.String s) = s
 unString _ = error "Was expecting a string"
