@@ -28,10 +28,12 @@ ml4hsfe w h mod pkg names rawAst = DS.force vec
         vec       = V.fromList processed
 
 handle :: Int -> Int -> LBS.ByteString -> (V.Vector Entry, [[H.Identifier]])
-handle w h x = case A.decode x of
-  Nothing   -> error "Failed to parse array of ASTs"
-  Just !all -> (V.map (handleOne w h all) all,
-                L.map G.toIds (G.group (L.map Ty.valToAstId (V.toList all))))
+handle !w !h x = case A.decode x of
+    Nothing   -> error "Failed to parse array of ASTs"
+    Just !all ->  let ids     = L.map Ty.valToAstId (V.toList all)
+                      sccs    = L.map G.toIds (G.group ids)
+                      entries = V.map (handleOne w h all) all
+                   in sccs `DS.deepseq` entries `DS.deepseq` (entries, sccs)
 
 enc = TE.encodeUtf8
 
