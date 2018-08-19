@@ -10,10 +10,11 @@ import           HS2AST.Types
 import qualified Types           as Ty
 
 data Entry = Entry {
-  entryId        :: !Identifier,
-  entryCluster   :: Maybe Int,
-  entryToCluster :: !Bool,
-  entryFeatures  :: Maybe Features
+  entryCluster       :: Maybe Int,
+  entryFeatures      :: Maybe Features,
+  entryId            :: !Identifier,
+  entryQuickspecable :: !Bool,
+  entryToCluster     :: !Bool
 }
 
 instance A.ToJSON Entry where

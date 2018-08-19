@@ -39,10 +39,11 @@ enc = TE.encodeUtf8
 
 handleOne :: Int -> Int -> A.Array -> A.Value -> Entry
 handleOne !w !h !xs (A.Object !x) = Entry {
-                                      entryCluster   = Nothing,
-                                      entryToCluster = False,
-                                      entryFeatures  = Just features,
-                                      entryId = H.ID {
+                                      entryCluster       = Nothing,
+                                      entryToCluster     = False,
+                                      entryFeatures      = Just features,
+                                      entryQuickspecable = qs,
+                                      entryId            = H.ID {
                                           H.idPackage = pkg,
                                           H.idModule  = mod,
                                           H.idName    = name
@@ -54,6 +55,9 @@ handleOne !w !h !xs (A.Object !x) = Entry {
         Just (A.String !name) = HM.lookup "name"    x
         Just (A.String !mod ) = HM.lookup "module"  x
         Just (A.String !pkg ) = HM.lookup "package" x
+        qs                    = case HM.lookup "quickspecable" x of
+                                  Just (A.Bool !q) -> q
+                                  Nothing          -> False
         names    = L.map getName (L.filter matchPkgMod (V.toList xs))
         getName (A.Object o) = case HM.lookup "name" o of
                                  Just (A.String !s) -> TE.encodeUtf8 s
