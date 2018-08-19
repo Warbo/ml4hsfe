@@ -14,7 +14,8 @@ data Entry = Entry {
   entryFeatures      :: Maybe Features,
   entryId            :: !Identifier,
   entryQuickspecable :: !Bool,
-  entryToCluster     :: !Bool
+  entryToCluster     :: !Bool,
+  entryTyped         :: !Bool
 }
 
 instance A.ToJSON Entry where
