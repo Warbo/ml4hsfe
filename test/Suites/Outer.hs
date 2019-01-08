@@ -34,6 +34,7 @@ clustered = V.toList (clusterLoop (pureKmeans (Just 5)) asts sccs)
                          Nothing -> error "Failed to trim ASTs"
                          Just l  -> encode . take 100 $ (l :: [Value])
 
+{-# NOINLINE rawAsts #-}
 rawAsts :: BS.ByteString
 rawAsts = unsafePerformIO
   (BS.readFile "examples/ml4hsfe-outer-loop-example-input.json")

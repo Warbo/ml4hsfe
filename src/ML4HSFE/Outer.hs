@@ -94,7 +94,7 @@ setClusterFrom !ast clusters = ast {
 getNMP x = do String !n <- HM.lookup "name"    x
               String !m <- HM.lookup "module"  x
               String !p <- HM.lookup "package" x
-              return $! (n, m, p)
+              return (n, m, p)
 
 unNum (Number !n) = n
 unNum x           = error (show ("Expected 'Number'", x))
@@ -149,9 +149,7 @@ setFeaturesFrom clusters ast = case Ty.entryFeatures ast of
 
 setFVFrom :: Prop ClusterID -> Ty.Feature -> Ty.Feature
 setFVFrom _        (Left  n) = Left n
-setFVFrom clusters (Right i) = Left (300 + (case HM.lookup i clusters of
-                                             Nothing -> 0
-                                             Just n  -> n))
+setFVFrom clusters (Right i) = Left (300 + fromMaybe 0 (HM.lookup i clusters))
 
 outerMain :: IO ()
 outerMain = do

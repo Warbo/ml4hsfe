@@ -13,8 +13,7 @@ import SrcLoc
 import Test.QuickCheck
 import qualified Data.Stringable as S
 
-sexprWith is = do x <- exprWith is
-                  return (toSexp dummyDb x)
+sexprWith is = toSexp dummyDb <$> exprWith is
 
 exprWith :: [Identifier] -> Gen CoreExpr
 exprWith []     = arbitrary
